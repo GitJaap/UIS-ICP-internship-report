@@ -29,6 +29,76 @@
 
 \usepackage{lipsum} % Required to insert dummy text. To be removed otherwise
 
+\usepackage{amsmath}
+\DeclareMathOperator{\Var}{Var}
+
+\newcommand{\pder}[2][]{\frac{\partial#1}{\partial#2}}
+\newcommand{\ppder}[2][]{\frac{\partial^2#1}{\partial#2^2}}
+\usepackage{amsthm}
+\usepackage[nice]{nicefrac}
+\theoremstyle{definition}
+\newtheorem{exmp}{Example}[section]
+
+\usepackage[capitalise]{cleveref}
+
+\crefname{exmp}{example}{examples}
+\Crefname{exmp}{Example}{Examples}
+
+%------------------------
+%   EXAMPLE USES OF STYLES
+%--------------
+
+%\begin{figure*}[ht]\centering % Using \begin{figure*} makes the figure take up the entire width of the page
+%\includegraphics[width=\linewidth]{view}
+%\caption{Wide Picture}
+%\label{fig:view}
+%\end{figure*}
+
+
+%\begin{enumerate}[noitemsep] % [noitemsep] removes whitespace between the items for a compact look
+%\item First item in a list
+%\item Second item in a list
+%\item Third item in a list
+%\end{enumerate}
+
+
+
+%\paragraph{Paragraph} \lipsum[7] % Dummy text
+%\paragraph{Paragraph} \lipsum[8] % Dummy text
+
+
+%\begin{table}[hbt]
+%\caption{Table of Grades}
+%\centering
+%\begin{tabular}{llr}
+%\toprule
+%\multicolumn{2}{c}{Name} \\
+%\cmidrule(r){1-2}
+%First name & Last Name & Grade \\
+%\midrule
+%John & Doe & $7.5$ \\
+%Richard & Miles & $2$ \\
+%\bottomrule
+%\end{tabular}
+%\label{tab:label}
+%\end{table}
+
+%\begin{description}
+%\item[Word] Definition
+%\item[Concept] Explanation
+%\item[Idea] Text
+%\end{description}
+
+
+%\begin{itemize}[noitemsep] % [noitemsep] removes whitespace between the items for a compact look
+%\item First item in a list
+%\item Second item in a list
+%\item Third item in a list
+%\end{itemize}
+
+
+
+
 %----------------------------------------------------------------------------------------
 %	COLUMNS
 %----------------------------------------------------------------------------------------
@@ -62,7 +132,7 @@
 
 \Authors{J. J. Wesdorp*} % Authors
 
-\Keywords{ Herling Gonzales Alvarez \textsuperscript{1} \newline  Koen van Dongen \textsuperscript{2} \newline Ana Beatrice Ramirez \textsuperscript{3}} % Keywords - if you don't want any simply remove all the text between the curly brackets
+\Keywords{ Herling Gonzalez-Alvarez \textsuperscript{1} \newline Prof. Koen van Dongen \textsuperscript{2} \newline Prof. Ana Ramirez \textsuperscript{3}} % Keywords - if you don't want any simply remove all the text between the curly brackets
 \newcommand{\keywordname}{Supervisors} % Defines the keywords heading name
 \affiliation{\textsuperscript{1}\textit{Instituto Colombia del Petróleo (ICP), Piedecuesta, Colombia}} % Author affiliation
 \affiliation{\textsuperscript{2}\textit{Technical University of Delft, the Netherlands}} % Author affiliation
@@ -91,125 +161,420 @@
 %	ARTICLE CONTENTS
 %----------------------------------------------------------------------------------------
 
-\section*{Introduction} % The \section*{} command stops section numbering
+\section{Introduction} % The \section*{} command stops section numbering
 
-\addcontentsline{toc}{section}{Introduction} % Adds this section to the table of contents
+%\addcontentsline{toc}{section}{Introduction} % Adds this section to the table of contents
 
-\lipsum[1-3] % Dummy text
- and some mathematics $\cos\pi=-1$ and $\alpha$ in the text\footnote{And some mathematics $\cos\pi=-1$ and $\alpha$ in the text.}.
+%-------------------------------------------------------------------------------------------------------------------
 
-%------------------------------------------------
+\section{Theory}
 
-\section{Methods}
 
-\begin{figure*}[ht]\centering % Using \begin{figure*} makes the figure take up the entire width of the page
-\includegraphics[width=\linewidth]{view}
-\caption{Wide Picture}
-\label{fig:view}
-\end{figure*}
-
-\lipsum[4] % Dummy text
-
+\subsection{Adjoint method for general discretized linear systems}\label{sec:discretized_math}
+This section derives in simple steps how to obtain the adjoint equations and gradients given a certain system of equations. These are cast in a general form usually present in acoustic, elastic or electromagnetic FWI applications. The proof of validity of this method is presented in \cref{sec:general_math}, in which we derived the method for an more general set of equations based on the notes of Bradley\cite{Bradley2012}.
+\subsubsection{Formulation}{}
+Say we have a model representing the earth (in seismic applications) or tissue (in medical applications) for some parameter like density $\rho$ or speed of sound $v$, which we discretized in a grid in space into $N_g  (= N_x \times N_z$ in 2D) points. If we want to model $d_m$ parameters over this grid we can write the values of these parameters over the grid as a vector $\vec{m}$ of dimension $d_m \times N_g$. We want to model $d_s$ fields also discretized in space on the same grid we can write them as a vector $\vec{s}$ of dimension $d_s \times N_g$. 
+useful simplification for already (only in space!) discretized wave equations(e.g electromagnetic, elastic or acoustic), whether written as a set of multiple first or second order PDE's in time and space, is the following form
 \begin{equation}
-\cos^3 \theta =\frac{1}{4}\cos\theta+\frac{3}{4}\cos 3\theta
-\label{eq:refname2}
+\label{eq:discretised_linear_system}
+\begin{aligned}
+\underset{\vec{m}}{\text{min}}\  & \chi\left(\vec{s},\vec{m}\right) =   \int_0^T f\left(\vec{s},\vec{m}\right) dt \\
+\text{subject to}\ \ \   &   T\left(\vec{m}\right)\ddot{\vec{s}} - C\left(\vec{m}\right)\dot{\vec{s}} - A\left(\vec{m}\right)\vec{s} -b\left(\vec{m}\right)= 0 \\
+ \text{with B.C}\ \ \  &  \vec{s}\left(0\right)  = 0 \\
+ &  \dot{\vec{s}}\left(0\right)  = 0 \\
+\end{aligned}
+\end{equation}
+where the $T, C, A$ are big matrices of coefficients which follow from the discretization in space of a PDE system and $b\left(\vec{m}\right)$ contains the source terms. 
+
+\subsubsection{Adjoint formulation}
+Using~\cref{eq:general_adjoint} and applying it to our system of~\cref{eq:discretised_linear_system} we obtain
+\begin{equation}\label{eq:adjoint_discretised_linear}
+T^T\left(\vec{m}\right) \ddot{\vec{\lambda}} = -C^T\left(\vec{m}\right)\dot{\vec{\lambda}} + A^T\left(\vec{m}\right) \vec{\lambda} - \pder[f]{\vec{s}}
 \end{equation}
 
-\lipsum[5] % Dummy text
 
-\begin{enumerate}[noitemsep] % [noitemsep] removes whitespace between the items for a compact look
-\item First item in a list
-\item Second item in a list
-\item Third item in a list
-\end{enumerate}
+\subsubsection{Gradients}
+We can apply~\cref{eq:general_gradient} to the system of~\cref{eq:discretised_linear_system} and find the following expression for the total gradient with respect to \emph{all} model parameters
+\begin{equation}\label{eq:gradient_discretised_linear}
+\frac{d\chi}{d\vec{m}} = \int_0^T \pder[f]{\vec{m}} + \vec{\lambda}^T \left(\pder[T]{\vec{m}}\ddot{\vec{s}} - \pder[C]{\vec{m}}\dot{\vec{s}} - \pder[A]{\vec{m}}\vec{s} -\pder[b]{\vec{m}}\right) dt
+\end{equation}
+Note that the gradients $\pder[T]{\vec{m}}, \pder[C]{\vec{m}}, \pder[A]{\vec{m}}$ can be seen as a sum of all the $3N$ derivatives of each component of the matrices $T\left(\vec{m}\right), C\left(\vec{m}\right), A\left(\vec{m}\right)$ to the discrete variables $\vec{m}_i$, but in practice we can write this into simple compact expressions as shown in the examples below.
 
-\subsection{Subsection}
 
-\lipsum[6] % Dummy text
 
-\paragraph{Paragraph} \lipsum[7] % Dummy text
-\paragraph{Paragraph} \lipsum[8] % Dummy text
+\subsubsection{Least squares cost function}
+In most cases the cost function is given by the misfit between observed data $d$ at certain receiver positions $y_R$ and the modeled data at the same positions $s_{y_R}$, so $f\left(\vec{s}\right)$ is given by 
+\begin{equation}\label{eq:cost_function_standard}
+f\left(\vec{s}\right) =\frac{1}{2} \sum_{R}^{N_R}||s_{y_R} - d_{y_R}||^2
+\end{equation}
+where the sum goes over all receiver positions. Note that $f\left(\vec{s}\right)$ does not depend directly on the model parameters $\vec{m}$ making the gradient expression simpler since $\pder[f]{\vec{m}} = 0$. We thus obtain
+\begin{equation}
+\pder[f]{\vec{s}} =  \sum_{R}^{N_R}||s_{y_R} - d_{y_R}|| 
+\end{equation}
 
-\subsection{Subsection}
 
-\lipsum[9] % Dummy text
+\subsection{Adjoint and gradients of the elastic wave equation}
+Elastic waves in 2D isotropic media can be modeled by using only three parameters, the density $\rho$ and the two Lame parameters $\mu, \lambda$ and follow the following system of equations
+\begin{equation}
+\begin{aligned}
+\rho \pder[v_x]{t} = \pder[\tau_{xx}]{x} + \pder[\tau_{xz}]{z} \\
+\rho \pder[v_z]{t} = \pder[\tau_{xz}]{x} + \pder[\tau_{zz}]{z} \\
+\pder[\tau_{xx}]{t} = \left(\lambda + 2\mu\right) \pder[v_x]{x} + \lambda \pder[v_z]{z} + b_{xx} \\
+\pder[\tau_{zz}]{t} = \left(\lambda + 2\mu\right) \pder[v_z]{z} + \lambda \pder[v_x]{x} + b_{zz} \\
+\pder[\tau_{xz}]{t} = \mu\left( \pder[v_x]{z} \pder[v_z]{x}\right) \\
+\end{aligned}
+\end{equation} 
+where we only added the source to the stress as to resemble an earthquake. The form of $b$ is independent of the model parameters and usually taken as a ricker wavelet. 
+writing this in the form of~\cref{eq:discretised_linear_system} gives $T(m) = 0$ and 
+\begin{equation}s = 
+\begin{bmatrix}
+v_x \\
+v_z \\
+\tau_{xx}\\
+\tau_{xz} \\
+\tau_{zx} \\
+\end{bmatrix},\ C\left(m\right) = -
+\begin{bmatrix}
+\vec \rho & 0 & 0 & 0 & 0 \\
+0 & \vec \rho & 0 & 0 & 0 \\
+0 & 0 & 1 & 0 & 0 \\
+0 & 0 & 0 & 1 & 0 \\
+0 & 0 & 0 & 0 & 1 \\
+\end{bmatrix}
+\end{equation}
+and 
+\begin{equation}
+A\left(m\right) = 
+\begin{bmatrix}
+0 & 0 & \mathcal{D}_x & 0 & \mathcal{D}_z \\
+0 & 0 & 0 & \mathcal{D}_z & \mathcal{D}_x \\
+\left(\lambda + 2\mu\right)\mathcal{D}_x & \lambda \mathcal{D}_z & 0 & 0 & 0 \\
+\lambda \mathcal{D}_x & \left(\lambda + 2\mu\right) \mathcal{D}_z & 0 & 0 & 0 \\
+\mu \mathcal{D}_z & \mu \mathcal{D}_x & 0 & 0 & 0 \\
+\end{bmatrix}
+\end{equation}
+Thus we have $C^T\left(m\right) = C\left(m\right)$ and 
+\begin{equation}
+A^T\left(m\right) = 
+\begin{bmatrix}
+0 & 0 & -\mathcal{D}_x\left(\lambda + 2\mu\right) & -\mathcal{D}_x\lambda & -\mathcal{D}_z\mu \\
+0 & 0 & -\mathcal{D}_z \lambda & -\mathcal{D}_z\left(\lambda + 2\mu\right) & -\mathcal{D}_x\mu \\
+-\mathcal{D}_x & 0 & 0 & 0 & 0 \\
+0 & -\mathcal{D}_z & 0 & 0 & 0 \\
+-\mathcal{D}_z & -\mathcal{D}_x & 0 & 0 & 0 \\
+\end{bmatrix}
+\end{equation}
+which in turn (when transforming back to the continuous domain from the discrete variables) results in the following adjoint equations(naming the adjoint variable $l$) as defined in~\cref{eq:adjoint_discretised_linear}
+\begin{equation}\label{eq:elastic_adjoint}
+\begin{aligned}
+\rho \pder[l_1]{t} &= \pder[\left(\left(\lambda + 2\mu\right)l_3\right)]{x} + \pder[\left(\lambda l_4\right)]{x} + \pder[\left(\mu \lambda_5\right)]{z} \\
+\rho \pder[l_2]{t} &= \pder[\left(\lambda l_3\right)]{z} + \pder[\left(\left(\lambda + 2\mu\right)l_4\right)]{z} + \pder[\left(\mu \lambda_5\right)]{x} \\
+\pder[l_3]{t} &= \pder[l_1]{x}\\
+\pder[l_4]{t} &= \pder[l_2]{z}\\
+\pder[l_5]{t} &= \pder[l_1]{z} + \pder[l_2]{x}\\
+\end{aligned}
+\end{equation}
+where the order of differentiation and multiplication with the model parameters is important. 
+The gradients then follow from~\cref{eq:gradient_discretised_linear}, giving 
 
-\begin{figure}[ht]\centering
-\includegraphics[width=\linewidth]{results}
-\caption{In-text Picture}
-\label{fig:results}
-\end{figure}
+\begin{equation}
+\begin{aligned}
+\frac{d\chi}{d\rho} &= \int_0^T - l^T \pder[C]{\rho} \dot s\ dt \\
+&=\int_0^T
+ \begin{bmatrix}
+\vec{l_1}&\vec{l_2}&\vec{l_3} &\vec{l_4} & \vec{l_5}\\
+\end{bmatrix}
+ \begin{bmatrix}
+I & 0 & 0 & 0 & 0 \\
+0  & I & 0&0&0\\
+0 & 0 & 0&0&0\\
+0&0&0&0&0\\
+0&0&0&0&0
+\end{bmatrix}
+\begin{bmatrix}
+\vec{\dot{v_x}}\\
+\vec{\dot{v_y}}\\
+\vec{\dot{\tau_{xx}}}\\
+\vec{\dot{\tau_{zz}}}\\
+\vec{\dot{\tau_{xz}}}
+\end{bmatrix} \\
+&=\int_0^T \vec{l_1}\vec{\dot{v}}_x + \vec{l_2}\vec{\dot{v}}_z \ dt 
+\end{aligned}
+\end{equation},
 
-Reference to Figure \ref{fig:results}.
+\begin{equation}
+\begin{aligned}
+\frac{d\chi}{d\lambda} &= \int_0^T - l^T \pder[A]{\lambda} s\ dt \\
+&=-\int_0^T
+ \begin{bmatrix}
+\vec{l_1}&\vec{l_2}&\vec{l_3} &\vec{l_4} & \vec{l_5}\\
+\end{bmatrix}
+ \begin{bmatrix}
+0 & 0 & 0 & 0 & 0 \\
+0  & 0 & 0&0&0\\
+\mathcal{D}_x & \mathcal{D}_z & 0&0&0\\
+\mathcal{D}_x&\mathcal{D}_z&0&0&0\\
+0&0&0&0&0
+\end{bmatrix}
+\begin{bmatrix}
+\vec{{v_x}}\\
+\vec{{v_y}}\\
+\vec{{\tau_{xx}}}\\
+\vec{{\tau_{zz}}}\\
+\vec{{\tau_{xz}}}
+\end{bmatrix} \\
+&=-\int_0^T \left(\vec{l_3} + \vec{l_4}\right) \left(\pder[\vec{v_x}]{x} + \pder[\vec{v_z}]{z}\right) 
+\end{aligned}
+\end{equation} and
+
+\begin{equation}
+\begin{aligned}
+\frac{d\chi}{d\mu} &= \int_0^T - l^T \pder[A]{\mu} s\ dt \\
+&=-\int_0^T
+ \begin{bmatrix}
+\vec{l_1}&\vec{l_2}&\vec{l_3} &\vec{l_4} & \vec{l_5}\\
+\end{bmatrix}
+ \begin{bmatrix}
+0 & 0 & 0 & 0 & 0 \\
+0  & 0 & 0&0&0\\
+2\mathcal{D}_x & 0 & 0&0&0\\
+0 &2\mathcal{D}_z&0&0&0\\
+\mathcal{D}_z&\mathcal{D}_x&0&0&0
+\end{bmatrix}
+\begin{bmatrix}
+\vec{{v_x}}\\
+\vec{{v_y}}\\
+\vec{{\tau_{xx}}}\\
+\vec{{\tau_{zz}}}\\
+\vec{{\tau_{xz}}}
+\end{bmatrix} \\
+&=-\int_0^T 2\vec{l_3} \pder[\vec{v_x}]{x} + 2\vec{l_4} \pder[\vec{v_z}]{z} + \vec{l_5}\left(\pder[\vec{v_x}]{z} + \pder[\vec{v_z}]{x}\right) \ dt
+\end{aligned}
+\end{equation}
+
+%-------------------------------------------------------------------------------------------------------------------
+
+\section{Numerical implementation}
+
+
+
+
+%--------------------------------------------------------------------------------------------------------------------
+
+\section{Simulation results}
+
+
+%--------------------------------------------------------------------------------------------------------------------
+
+\section{Conclusion}
+
+%--------------------------------------------------------------------------------------------------------------------
+
+
 
 %------------------------------------------------
+%\phantomsection
+%\section*{Acknowledgments} % The \section*{} command stops section numbering
 
-\section{Results and Discussion}
+%\addcontentsline{toc}{section}{Acknowledgments} % Adds this section to the table of contents
 
-\lipsum[10] % Dummy text
+%So long and thanks for all the fish
 
-\subsection{Subsection}
+\appendix
+\section*{Appendices}
+\addcontentsline{toc}{section}{Appendices}
+\section{Lagrangian based derivation of the gradient via the adjoint state method}\label{sec:general_math}
+In this section the adjoint equations and the gradients for a general first or second order PDE system will be derived following the approach outlined in \cite{Bradley2012}.
+\subsection{General system of equations}
+\label{sec:general_system}
+We can write the most general minimization problem of a cost function subject any first order or second order (in time) set of partial differential equations(PDE) in the following form
+\begin{equation}
+\label{eq:general_system}
+\begin{aligned}
+\underset{m}{\text{min}} &&  \chi\left(s,m\right) = &  \int_0^T f\left(s,m\right) dt & &\\
+\text{subject to} & & h\left(\ddot{s}, \dot{s}, s, m, t\right) & =  0 \\
+ \text{with B.C} & & g\left((s\left(0\right), m\right) & = 0 \\
+ & & k\left((\dot{s}\left(0\right), m\right) & = 0 \\
+\end{aligned}
+\end{equation}
+where $s$ is a discretized vector of the fields and the dots denote derivatives to time, $m$ is the vector of all the discretized model parameters, $t$ denotes time, $h\left(\ddot{s}, \dot{s}, s, m, t\right)  =  0$ is the system of equations, e.g the wave equation in 2D or 3D,$T$ is the final time of integration and $g\left((s\left(0\right), m\right), k\left((\dot{s}\left(0\right), m\right)$ denote initial conditions for the field vector $s$ and its derivative $\dot{s}$. Note that this is similar to \cite{Bradley2012} but with the added explicit dependence of both $\dot s$ and $\ddot s$ giving a more general expression for the adjoint equations and the gradients. 
 
-\lipsum[11] % Dummy text
+\subsection{Derivative to model parameters}
+ When solving the minimization problem numerically, one often uses a method similar to Newton's gradient descend. This thus requires knowledge of the derivative of the cost function $\chi\left(s,m\right)$ to all of the model parameters $m$. Using the chain rule we obtain:
+\begin{equation}\label{eq:derivative_of_chi}
+\frac{d\chi}{dm} = \frac{\partial \chi}{\partial s}\frac{\partial s}{\partial m} + \frac{\partial \chi}{\partial m}
+\end{equation}
+This depends on the Frechet derivatives $\frac{\partial s}{\partial m}$ which require at least $3N$ evaluations of the forward model in order to obtain an estimate, we thus want to avoid the calculation of this term. To facilitate this we define the Lagrangian $\mathcal{L}$ by
+\begin{equation}\label{eq:lagrangian}
+\begin{aligned}
+\mathcal{L} =   \int_0^T \left[f\left(s, m \right) + \lambda^T h\left(\ddot s, \dot s, s, m , t\right)\right] dt 
++ \mu ^T g\left((s\left(0\right), m\right)  + \eta^T k\left((\dot{s}\left(0\right), m\right)
+\end{aligned}
+\end{equation}
+where the auxiliary variables $\lambda, \mu, \eta$ have the same length as the discretized field vector $s$.
+Note that due to the initial conditions of~\cref{eq:general_system} we have $\frac{d\chi}{dm} = \frac{d\mathcal{L}}{dm}$, where using the chain rule repetitively 
+\begin{equation}\label{eq:lagrangian_derivative_general}
+\begin{aligned}
+\frac{d\mathcal{L}}{dm} & =  \int_0^T \left[ \pder[f]{s} \pder[s]{m} + \pder[f]{m} \right. \\
+& \left. + \lambda^T \left(\pder[h]{\ddot s}\pder[\ddot s]{m} + \pder[h]{\dot s} \pder[\dot s]{m} + \pder[h]{s}\pder[s]{m} + \pder[h]{m}\right) \right]dt  \\
+& + \mu^T \left(\pder[g]{s(0)} \pder[s(0)]{m} + \pder[g]{m} \right) \\
+& + \eta^T \left(\pder[k]{\dot s(0)} \pder[\dot s(0)]{m} + \pder[k]{m} \right)    
+\end{aligned}
+\end{equation}
+This looks intimidating and not really much simpler, but we are still free to choose the expressions for $\lambda, \mu$ and $\eta$. We will choose this such that we can avoid calculating the computationally difficult derivatives $\pder[s]{m}$. But first we need to do some partial integration to get rid of  $\pder[\dot s]{m}$ and $\pder[\ddot s]{m}$.
+With a single partial integration we can write
+\begin{equation}\label{eq:lagrangian_partial_first_order}
+\begin{aligned}
+\int^T_0  \lambda^T \pder[h]{\dot s} \pder[\dot s]{m} = \left[\lambda^T \pder[h]{\dot s} \pder[s]{m}\right]^T_0
+ - \int_0^T \pder[s]{m}\left(\dot \lambda^T \pder[h]{\dot s} + \lambda^T \pder{t}\pder[h]{\dot s} \right)
+\end{aligned}
+\end{equation}
+and with a double partial integration we can write
+\begin{equation}\label{eq:lagrangian_partial_second_order}
+\begin{aligned}
+\int^T_0  \lambda^T \pder[h]{\ddot s} \pder[\ddot s]{m} &= \left[\lambda^T \pder[h]{\dot s} \pder[\dot s]{m} - \pder[s]{m}\left(\dot \lambda^T \pder[h]{\ddot s} + \lambda^T \pder{t}\pder[h]{\ddot s}\right)  \right]^T_0 \\
+ &+ \int_0^T \pder[s]{m}\left(\ddot \lambda^T \pder[h]{\ddot s} + 2 \dot \lambda^T \pder{t}\pder[h]{\ddot s} + \lambda^T \ppder{t}\pder[h]{\ddot s} \right) dt 
+\end{aligned}
+\end{equation}
+So filling this back into~\cref{eq:lagrangian_derivative_general} and regrouping terms gives
+\begin{equation}
+\begin{aligned}
+\frac{d\mathcal{L}}{dm}& = \int_0^T \left[\pder[s]{m}\left( \pder[f]{s} + \ddot \lambda^T \pder[h]{\ddot s}
+ + \dot \lambda^T\left(2\pder{t}\pder[h]{\ddot s}- \pder[h]{\dot s}\right)\right.\right. \\
+& \left. \left.  + \lambda^T\left(\pder[h]{s} + \ppder{t}\pder[h]{\ddot s} -\pder{t}\pder[h]{\dot s}\right)\right)
+ + \pder[f]{m} + \lambda^T \pder[h]{m}\right]dt \\
+ &+\left.\left(\mu^T \pder[g]{s(0)} - \lambda^T\pder[h]{\dot s} + \dot \lambda^T \pder[h]{\ddot s} + \lambda^T\pder{t}\pder[h]{\ddot s}\right)\pder[s]{m}\right|_0 \\
+ &+ \left. \left(\eta^T\pder[h]{\dot s(0)} - \lambda^T \pder[h]{\ddot s}\right)\pder[\dot s]{m}\right|_0 \\
+ & + \left.\lambda^T \pder[h]{\ddot s} \pder[\dot s]{m}\right|_T + \left.\left(\lambda^T \pder[h]{\dot s} - \dot \lambda^T \pder[h]{\ddot s} - \lambda^T \pder{t}\pder[h]{\ddot s} \right)\pder[s]{m}\right|_T\\
+ & + \mu^T \pder[g]{m} + \eta^T \pder[k]{m}
+\end{aligned}
+\end{equation}
+we can then choose values for the auxiliary variables such that undesired terms drop out of $\frac{d\mathcal{L}}{dm}$. If we set 
+\begin{equation}
+\begin{aligned}
+\mu^T &= \left(\dot \lambda(0) \pder[h]{\ddot s} + \lambda^T(0)\left(\pder{t} \pder[h]{\ddot s} - \pder[h]{\dot s} \right)\right) \left(\pder[g]{s(0)}\right)^{-1} \\
+\eta^T &= \left(\lambda(0) \pder[h]{\ddot s} \right)\left(\pder[k]{\dot s(0)}\right)^{-1}\\
+\lambda(T) & = 0\\
+\dot \lambda(T) &= 0
+\end{aligned}
+\end{equation}
+and let $\lambda$ satisfy the following so called \emph{adjoint} equation 
+\begin{equation}
+\label{eq:general_adjoint}
+\begin{aligned}
+\ddot \lambda^T \pder[h]{\ddot s} + \dot \lambda^T \left(2\pder{t}\pder[h]{\ddot s} - \pder[h]{\dot s} \right)
+ + \lambda^T\left(\pder[h]{s} + \ppder{t}\pder[h]{\ddot s} -\pder{t}\pder[h]{\dot s}\right) = -\pder[f]{s}
+\end{aligned}
+\end{equation}
+we can see that the $\pder[s]{m}$ terms drop out of $\frac{d\mathcal{L}}{m}$ and we remain for the \emph{gradients} only with
+\begin{equation}\label{eq:general_gradient}
+\frac{d\mathcal{L}}{dm} =\int_0^T \pder[f]{m} + \lambda^T \pder[h]{m} dt + \mu^T \pder[g]{m} + \eta^T \pder[k]{m}
+\end{equation} 
+where the two rightmost terms are zero if the initial conditions do not depend directly on the model parameters $m$. \cref{eq:general_adjoint} is called the \emph{adjoint} equation to the original system of equations $h\left(\ddot s, \dot s, s, m, t\right)$
 
-\begin{table}[hbt]
-\caption{Table of Grades}
-\centering
-\begin{tabular}{llr}
-\toprule
-\multicolumn{2}{c}{Name} \\
-\cmidrule(r){1-2}
-First name & Last Name & Grade \\
-\midrule
-John & Doe & $7.5$ \\
-Richard & Miles & $2$ \\
-\bottomrule
-\end{tabular}
-\label{tab:label}
-\end{table}
+\section{More example applications}\label{sec:examples}
 
-\subsubsection{Subsubsection}
+\subsection{The second order electromagnetic wave equation}
+Now for an example with second order terms as well we take the following second order electromagnetic wave equation 
+\begin{equation}
+\epsilon \ppder[E_y]{t} = \pder{x}\left(\frac{1}{\mu}\pder[E_y]{x}\right) + \pder{z}\left(\frac{1}{\mu} \pder[E_y]{z}\right) - \sigma \pder[E_y]{t} 
+\end{equation}
+which models the same as~\cref{exmp:electromagnetic_system}. We can see that now $s = \vec{E_y}$ a single field variable ( which is still a vector of length N) 
+\begin{equation}
+T(m) = \epsilon, \ C(m) = -\sigma, \ A(m) = \mathcal{D}_x\frac{1}{\mu}\mathcal{D}_x + \mathcal{D}_z \frac{1}{\mu} \mathcal{D}_z
+\end{equation}
+All of these operators are self-adjoint, thus $A^T(m) = A(m), \ C^T(m) = C(m), \ T^T(m) = T(m) $, we thus get for the adjoint equation
+\begin{equation}
+\epsilon \ppder[\lambda]{t} = \pder{x}\left(\frac{1}{\mu}\pder[\lambda]{x}\right) + \pder{z}\left(\frac{1}{\mu} \pder[\lambda]{z}\right) + \sigma \pder[\lambda]{t} 
+\end{equation}
+where there is only a sign change in front of $\sigma$ due to~\cref{eq:adjoint_discretised_linear}. 
+The gradients then become according to~\cref{eq:gradient_discretised_linear}
+\begin{equation}
+\begin{aligned}
+\frac{d\chi}{d\epsilon} &= \int_0^T\vec{\lambda}^T\vec{\ddot{E_y}} \ dt \\
+\frac{d\chi}{d\mu} &= \int_0^T\vec{\lambda}^T\left(\pder{x}\left(\frac{1}{\mu^2}\pder[\vec{E_y}]{x}\right) + \pder{z}\left(\frac{1}{\mu^2} \pder[\vec{E_y}]{z}\right)\right)\ dt \\
+\frac{d\chi}{d\sigma}& = \int_0^T\vec{\lambda}^T\vec{\dot{E_y}} \  dt
+\end{aligned}
+\end{equation}
 
-\lipsum[12] % Dummy text
+\subsection{The second order acoustic wave equation}
+The acoustic wave equation with variable density $\rho$ and velocity $c$ is given by
+\begin{equation}\label{eq:second_order_acoustic}
+\frac{1}{\rho c^2}\ppder[p]{t} = \left(\pder{x}\left(\frac{1}{\rho}\pder[p]{x}\right) + \pder{z}\left(\frac{1}{\rho}\pder[p]{z}\right) \right)
+\end{equation}
+we thus get 
+\begin{equation}
+T(m) = \frac{1}{\rho c^2}, \ C(m) = 0, \ A(m) = \mathcal{D}_x\frac{1}{\rho}\mathcal{D}_x + \mathcal{D}_z \frac{1}{\rho} \mathcal{D}_z
+\end{equation}
+which looks very similar to the electromagnetic case, again $A^T(m) = A(m), \ C^T(m) = C(m), \ T^T(m) = T(m) $, so following~\cref{eq:adjoint_discretised_linear} the adjoint equation is the same as the original equation
+\begin{equation}
+\frac{1}{\rho c^2}\ppder[\lambda]{t} = \left(\pder{x}\left(\frac{1}{\rho}\pder[\lambda]{x}\right) + \pder{z}\left(\frac{1}{\rho}\pder[\lambda]{z}\right) \right)
+\end{equation}
+According to~\cref{eq:gradient_discretised_linear} we then obtain
+\begin{equation}
+\begin{aligned}
+\frac{d\chi}{dc} &=-\frac{2}{\rho c^3} \int_0^T\vec{\lambda}^T\vec{\ddot{p}} \ dt \\
+\frac{d\chi}{d\rho} &= \int_0^T\vec{\lambda}^T\left(-\frac{1}{\rho^2 c^2} \vec{\ddot{p}} + \pder{x}\left(\frac{1}{\rho^2}\pder[\vec{p}]{x}\right) + \pder{z}\left(\frac{1}{\rho^2} \pder[\vec{p}]{z}\right)\right)\ dt \\
+\end{aligned}
+\end{equation}
 
-\begin{description}
-\item[Word] Definition
-\item[Concept] Explanation
-\item[Idea] Text
-\end{description}
 
-\subsubsection{Subsubsection}
+\subsection{The first order acoustic wave equation}
+The first order acoustic wave equation with variable density $\rho$ and velocity $c$ is given by
+\begin{equation}
+\label{eq:acoustic_first_order_wave_equation}
+\begin{aligned}
+\frac{1}{\rho c^2}\pder[p]{t} & = -\pder[v_x]{x} - \pder[v_z]{z} \\
+ \pder[v_x]{t} & =-\frac{1}{\rho} \pder[p]{x} \\
+ \pder[v_z]{t} & =-\frac{1}{\rho} \pder[p]{z} \\
+\end{aligned}
+\end{equation}
+this gives 
+\begin{equation}
+T(m) = 0, \ C(m) = -
+\begin{bmatrix}
+\frac{1}{\rho c^2} &0& 0 \\
+0&1&0\\
+0&0&1\\
+\end{bmatrix},
+\ A(m) = \begin{bmatrix}
+0 &-\mathcal{D}_x& -\mathcal{D}_z \\
+-\frac{1}{\rho}\mathcal{D}_x&0&0\\
+-\frac{1}{\rho}\mathcal{D}_z&0&0\\
+\end{bmatrix}
+\end{equation}
+we thus get $C^T(m) = C$ and
+\begin{equation}
+\ A^T(m) = \begin{bmatrix}
+0 &\mathcal{D}_x\frac{1}{\rho}& \mathcal{D}_z\frac{1}{\rho} \\
+\mathcal{D}_x&0&0\\
+\mathcal{D}_z&0&0\\
+\end{bmatrix}
+\end{equation}
+so the adjoint equations according to~\cref{eq:adjoint_discretised_linear} become
+\begin{equation}\label{eq:adjoint_acoustic_first_order}
+\begin{aligned}
+\frac{1}{\rho c^2}\pder[\lambda_1]{t} & = -\pder[\left(\frac{1}{\rho}\lambda_2\right)]{x} - \pder[\left(\frac{1}{\rho}\lambda_3\right)]{z} \\
+ \pder[\lambda_2]{t} & =- \pder[\lambda_1]{x} \\
+ \pder[\lambda_3]{t} & =-\pder[\lambda_1]{z} \\
+\end{aligned}
+\end{equation}
 
-\lipsum[13] % Dummy text
-
-\begin{itemize}[noitemsep] % [noitemsep] removes whitespace between the items for a compact look
-\item First item in a list
-\item Second item in a list
-\item Third item in a list
-\end{itemize}
-
-\subsubsection{Subsubsection}
-
-\lipsum[14] % Dummy text
-
-\subsection{Subsection}
-
-\lipsum[15-23] % Dummy text
-
-%------------------------------------------------
-\phantomsection
-\section*{Acknowledgments} % The \section*{} command stops section numbering
-
-\addcontentsline{toc}{section}{Acknowledgments} % Adds this section to the table of contents
-
-So long and thanks for all the fish \cite{Figueredo:2009dg}.
+and the gradients according to~\cref{eq:gradient_discretised_linear}
+\begin{equation}
+\begin{aligned}
+\frac{d\chi}{dc} &=-\frac{2}{\rho c^3} \int_0^T\vec{\lambda_1}^T\vec{\dot{p}} \ dt \\
+\frac{d\chi}{d\rho} &= \int_0^T \frac{-1}{\rho^2 c^2} \vec{\lambda_1}^T \vec{\dot{p}} + \frac{1}{\rho^2}\left(\vec{\lambda_2}^T \pder[\vec{v_x}]{x} + \vec{\lambda_3}^T \pder[\vec{v_z}]{z}\right)\  dt\\
+\end{aligned}
+\end{equation}
 
 %----------------------------------------------------------------------------------------
 %	REFERENCE LIST
 %----------------------------------------------------------------------------------------
 \phantomsection
 \bibliographystyle{unsrt}
-\bibliography{sample}
+\bibliography{bib/UIS_ICP}
+
 
 %----------------------------------------------------------------------------------------
 
