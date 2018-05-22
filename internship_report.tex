@@ -39,10 +39,6 @@
 \theoremstyle{definition}
 \newtheorem{exmp}{Example}[section]
 
-\usepackage[capitalise]{cleveref}
-
-\crefname{exmp}{example}{examples}
-\Crefname{exmp}{Example}{Examples}
 
 %------------------------
 %   EXAMPLE USES OF STYLES
@@ -119,7 +115,10 @@
 
 \usepackage{hyperref} % Required for hyperlinks
 \hypersetup{hidelinks,colorlinks,breaklinks=true,urlcolor=color2,citecolor=color1,linkcolor=color1,bookmarksopen=false,pdftitle={Title},pdfauthor={Author}}
+\usepackage[capitalise]{cleveref}
 
+\crefname{exmp}{example}{examples}
+\Crefname{exmp}{Example}{Examples}
 %----------------------------------------------------------------------------------------
 %	ARTICLE INFORMATION
 %----------------------------------------------------------------------------------------
@@ -167,7 +166,7 @@
 
 %-------------------------------------------------------------------------------------------------------------------
 
-\section{Theory}
+\section{A simple recipe for the adjoint state method}
 
 
 \subsection{Adjoint method for general discretized linear systems}\label{sec:discretized_math}
@@ -215,7 +214,7 @@ where the sum goes over all receiver positions. Note that $f\left(\vec{s}\right)
 
 \subsection{Adjoint and gradients of the elastic wave equation}
 Elastic waves in 2D isotropic media can be modeled by using only three parameters, the density $\rho$ and the two Lame parameters $\mu, \lambda$ and follow the following system of equations
-\begin{equation}
+\begin{equation}\label{eq:elastic_system}
 \begin{aligned}
 \rho \pder[v_x]{t} = \pder[\tau_{xx}]{x} + \pder[\tau_{xz}]{z} \\
 \rho \pder[v_z]{t} = \pder[\tau_{xz}]{x} + \pder[\tau_{zz}]{z} \\
@@ -347,7 +346,7 @@ I & 0 & 0 & 0 & 0 \\
 \vec{{\tau_{xx}}}\\
 \vec{{\tau_{zz}}}\\
 \vec{{\tau_{xz}}}
-\end{bmatrix} \\
+\end{bmatrix} \\{}
 &=-\int_0^T 2\vec{l_3} \pder[\vec{v_x}]{x} + 2\vec{l_4} \pder[\vec{v_z}]{z} + \vec{l_5}\left(\pder[\vec{v_x}]{z} + \pder[\vec{v_z}]{x}\right) \ dt
 \end{aligned}
 \end{equation}
@@ -355,8 +354,53 @@ I & 0 & 0 & 0 & 0 \\
 %-------------------------------------------------------------------------------------------------------------------
 
 \section{Numerical implementation}
+Chapter intro here
 
+\subsection{Staggered grid discrete equations}
+We now show the modeling of~\cref{eq:elastic_system}.
+Due to the nature of the equations, if we would implement every field at the same grid point in time and space using centered finite differences, we would get decoupling between the velocity and stress in time and space(e.g $V_x$ at time t depending on $\tau$ at time $t \pm \frac{dt}{2}$ which we do not have defined).
+This could be solved by using a two times finer grid, but can be more elegantly solved by use a staggered grid following~\cite{Virieux1984}.
+Using the notation $\left\{v_x, v_z, \tau_{xx}, \tau_{zz}, \tau_{xz}\right\} = \left\{U, V, X, Z, T \right\}$ we do a "leapfrog" scheme, which in each timestep loops over the spatial directions for calculating $U^{n+\frac{1}{2}},V^{n+\frac{1}{2}}$ as a function of the previously calculated $X^n, Z^n, T^n$ first and consecutively loops over the spatial directions again to calculate $X^{n+1}, Z^{n+1}, T^{n+1}$ depending on the just calculated $U^{n+\frac{1}{2}},V^{n+\frac{1}{2}}$. 
+This avoids the decoupling mentioned above, but requires the fields to be defined in different points in the grid.
+The numerical equations are then given by (using a 2nd order central difference in time and arbitrary difference operator in space)
 
+\begin{equation}
+\left\{
+\begin{split}
+U_{i,j}^{n+\frac{1}{2}}  &= U_{i,j}^{n-\frac{1}{2}} + \frac{\Delta t}{\rho_{i,j}}\left[ D_xX_{i,j}^n + D_zT^n_{i,j}\right] \\
+V_{i+\frac{1}{2},j+\frac{1}{2}}^{n+\frac{1}{2}}  &= V_{i+\frac{1}{2},j+\frac{1}{2}}^{n-\frac{1}{2}} + \frac{\Delta t}{\rho_{i+\frac{1}{2},j+\frac{1}{2}}}\left[ D_xT_{i+\frac{1}{2},j+\frac{1}{2}}^n + D_zZ^n_{i+\frac{1}{2},j+\frac{1}{2}}\right] \\
+X_{i+\frac{1}{2},j}^{n+1}  &= X_{i+\frac{1}{2},j}^{n} + \Delta t\left[ \left(\lambda_{i+\frac{1}{2},j} + 2 \mu_{i+\frac{1}{2},j}\right)D_xU_{i+\frac{1}{2},j}^{n+\frac{1}{2}} + \lambda_{i+\frac{1}{2},j} D_zV^{n+\frac{1}{2}}_{i+\frac{1}{2},j}\right] \\
+Z_{i+\frac{1}{2},j}^{n+1}  &= Z_{i+\frac{1}{2},j}^{n} + \Delta t\left[ \left(\lambda_{i+\frac{1}{2},j} + 2 \mu_{i+\frac{1}{2},j}\right)D_zV_{i+\frac{1}{2},j}^{n+\frac{1}{2}} + \lambda_{i+\frac{1}{2},j} D_xU^{n+\frac{1}{2}}_{i+\frac{1}{2},j}\right] \\
+T_{i,j+\frac{1}{2}}^{n+1}  &= T_{i,j+\frac{1}{2}}^{n} + \mu_{i,j+\frac{1}{2}}\Delta t\left[ D_zU_{i,j+\frac{1}{2}}^{n+\frac{1}{2}} + D_xV^{n+\frac{1}{2}}_{i,j+\frac{1}{2}}\right] \\
+\end{split}\right.
+\end{equation}
+where for the simplest second order differential operator $D_x A^n_{i,j} = \frac{A^n_{i+\frac{1}{2},j} - A^n_{i-\frac{1}{2},j}}{\Delta_x}$ and $D_z A^n_{i,j} = \frac{A^n_{i,j+\frac{1}{2}} - A^n_{i,j-\frac{1}{2}}}{\Delta_z}$. $n$ denotes the discrete time step, $i,j$ the $x,z$ coordinates respectively, and $\Delta t, \Delta x, \Delta z$ are the stepsizes taken into each direction respectively.
+
+Note that in the actual implementation all arrays start at index 0. Therefore the indexes of U remain just $i,j$, but for the others we get 
+\begin{equation}
+\left\{
+\begin{split}
+U &: \  & i \rightarrow i' &,\ j \rightarrow j' \\ 
+V &: \  & i +\frac{1}{2} \rightarrow i' &,\ j +\frac{1}{2} \rightarrow j' \\ 
+X &: \  & i +\frac{1}{2} \rightarrow i' &,\ j \rightarrow j' \\ 
+Z &: \  & i +\frac{1}{2} \rightarrow i' &,\ j \rightarrow j' \\ 
+T &: \  & i \rightarrow i' &,\ j +\frac{1}{2} \rightarrow j' \\ 
+\end{split}\right.
+\end{equation}
+
+where $'$ stands for the index in the code, since we imagine them displaced from the origin.
+
+\subsection{CPML Absorbing boundaries}
+In this section we introduce the widely used CPML boundary conditions~\cite{Komatitsch2007}. This simulates the conditions that we have an numberically infeasible infinite domain by absorbing the waves that reach the boundaries. 
+
+\subsection{Obtaining realistic model parameters}
+\subsubsection{Brocher relations}
+Brocher relations!\cite{Brocher2005}
+
+\subsection{Total system energy}
+\begin{equation}\label{eq:elastic_system_energy}
+E = K + T = \frac{1}{2}\rho ||v||^2 + \frac{1}{2}\sum\sigma_{ij}\epsilon_{ij}
+\end{equation}
 
 
 %--------------------------------------------------------------------------------------------------------------------
