@@ -184,35 +184,31 @@ This method is subsequently tested by performing FWI on a test model described i
 
 
 \subsection{Adjoint method for general discretized linear systems}\label{sec:discretized_math}
-This section derives in simple steps how to obtain the adjoint equations and gradients given a certain system of equations. These are cast in a general form usually present in acoustic, elastic or electromagnetic FWI applications. The proof of validity of this method is presented in \cref{sec:general_math}, in which we derived the method for an more general set of equations based on the notes of Bradley\cite{Bradley2012}.
+This section shows in simple steps how to obtain the adjoint equations and gradients given a general system of wave equations and initial and boundary conditions of zero. These are cast in a general form usually present in acoustic, elastic or electromagnetic FWI applications. The proof of validity and derivation of this method is presented in \cref{sec:general_math} for an more general set of equations based on the notes of Bradley\cite{Bradley2012}.
 \subsubsection{Formulation}{}
-Say we have a model representing the earth (in seismic applications) or tissue (in medical applications) for some parameter like density $\rho$ or speed of sound $v$, which we discretized in a grid in space into $N_g  (= N_x \times N_z$ in 2D) points. If we want to model $d_m$ parameters over this grid we can write the values of these parameters over the grid as a vector $\vec{m}$ of dimension $d_m \times N_g$. We want to model $d_s$ fields also discretized in space on the same grid we can write them as a vector $\vec{s}$ of dimension $d_s \times N_g$. 
-useful simplification for already (only in space!) discretized wave equations(e.g electromagnetic, elastic or acoustic), whether written as a set of multiple first or second order PDE's in time and space, is the following form
+Say we have a model representing the earth (in seismic applications) or tissue (in medical applications) for some parameter like density $\rho$ or speed of sound $v$, which we discretized in a grid in space into $N_g  (= N_x \times N_z$ in 2D) points. If we want to model $d_m$ parameters over this grid we can write the values of these parameters over the grid as a vector $\vec{m}$ of dimension $d_m \times N_g$. We want to model $d_s$ fields also discretized in space on the same grid we can write them as a vector $\vec{s}$ of dimension $d_s \times N_g$. Any FWI problem of wave equations(e.g electromagnetic, elastic or acoustic), whether they are  multiple first or second order PDE's in time and space, can be written as the following minimization problem given a set of discretized(only in space) ODEs
 \begin{equation}
 \label{eq:discretised_linear_system}
 \begin{aligned}
 \underset{\vec{m}}{\text{min}}\  & \chi\left(\vec{s},\vec{m}\right) =   \int_0^T f\left(\vec{s},\vec{m}\right) dt \\
-\text{subject to}\ \ \   &   T\left(\vec{m}\right)\ddot{\vec{s}} - C\left(\vec{m}\right)\dot{\vec{s}} - A\left(\vec{m}\right)\vec{s} -b\left(\vec{m}\right)= 0 \\
+\text{subject to}\ \ \   &   T\left(\vec{m}\right)\ddot{\vec{s}} - C\left(\vec{m}\right)\dot{\vec{s}} - A\left(\vec{m}\right)\vec{s} -\vec{b}\left(\vec{m}\right)= 0 \\
  \text{with B.C}\ \ \  &  \vec{s}\left(0\right)  = 0 \\
  &  \dot{\vec{s}}\left(0\right)  = 0 \\
 \end{aligned}
 \end{equation}
-where the $T, C, A$ are big matrices of coefficients which follow from the discretization in space of a PDE system and $b\left(\vec{m}\right)$ contains the source terms. 
+where $T, C, A$ are big matrices of $(N_g \times d_s) \times (N_g \times d_s)$ coefficients which follow from the discretization in space of a PDE system, $\vec{b}\left(\vec{m}\right)$ is a vector of the same length of $\vec{s}$ which contains the source terms, $\chi$ denotes the total cost function and we denote time explicitely by taking the integral of some function $f$ since usually we simplify each cost function into this form. 
 
-\subsubsection{Adjoint formulation}
-Using~\cref{eq:general_adjoint} and applying it to our system of~\cref{eq:discretised_linear_system} we obtain
-\begin{equation}\label{eq:adjoint_discretised_linear}
-T^T\left(\vec{m}\right) \ddot{\vec{\lambda}} = -C^T\left(\vec{m}\right)\dot{\vec{\lambda}} + A^T\left(\vec{m}\right) \vec{\lambda} - \pder[f]{\vec{s}}
-\end{equation}
-
-
-\subsubsection{Gradients}
-We can apply~\cref{eq:general_gradient} to the system of~\cref{eq:discretised_linear_system} and find the following expression for the total gradient with respect to \emph{all} model parameters
+\subsubsection{Gradients and adjoint}
+We can apply~\cref{eq:general_gradient} of~\cref{sec:general_math} to the system of~\cref{eq:discretised_linear_system} and find the following expression for the total gradient with respect to \emph{all} model parameters
 \begin{equation}\label{eq:gradient_discretised_linear}
 \frac{d\chi}{d\vec{m}} = \int_0^T \pder[f]{\vec{m}} + \vec{\lambda}^T \left(\pder[T]{\vec{m}}\ddot{\vec{s}} - \pder[C]{\vec{m}}\dot{\vec{s}} - \pder[A]{\vec{m}}\vec{s} -\pder[b]{\vec{m}}\right) dt
 \end{equation}
-Note that the gradients $\pder[T]{\vec{m}}, \pder[C]{\vec{m}}, \pder[A]{\vec{m}}$ can be seen as a sum of all the $3N$ derivatives of each component of the matrices $T\left(\vec{m}\right), C\left(\vec{m}\right), A\left(\vec{m}\right)$ to the discrete variables $\vec{m}_i$, but in practice we can write this into simple compact expressions as shown in the examples below.
-
+Note that the gradients $\pder[T]{\vec{m}}, \pder[C]{\vec{m}}, \pder[A]{\vec{m}}$ can be seen as a sum of all the $3N$ derivatives of each component of the matrices $T\left(\vec{m}\right), C\left(\vec{m}\right), A\left(\vec{m}\right)$ to the discrete variables $\vec{m}_i$, but in practice we can write this into simple compact expressions as shown in the examples in~\cref{sec:examples}.
+The adjoint variable $\lambda$ is given using~\cref{eq:general_adjoint} and applying it to our system of~\cref{eq:discretised_linear_system} we obtain
+\begin{equation}\label{eq:adjoint_discretised_linear}
+T^T\left(\vec{m}\right) \ddot{\vec{\lambda}} = -C^T\left(\vec{m}\right)\dot{\vec{\lambda}} + A^T\left(\vec{m}\right) \vec{\lambda} - \pder[f]{\vec{s}}
+\end{equation}
+giving an extra set of equations that need to be solved. 
 
 
 \subsubsection{Least squares cost function}
@@ -234,18 +230,20 @@ Elastic waves in 2D isotropic media can be modeled by using only three parameter
 \rho \pder[v_z]{t} = \pder[\tau_{xz}]{x} + \pder[\tau_{zz}]{z} \\
 \pder[\tau_{xx}]{t} = \left(\lambda + 2\mu\right) \pder[v_x]{x} + \lambda \pder[v_z]{z} + b_{xx} \\
 \pder[\tau_{zz}]{t} = \left(\lambda + 2\mu\right) \pder[v_z]{z} + \lambda \pder[v_x]{x} + b_{zz} \\
-\pder[\tau_{xz}]{t} = \mu\left( \pder[v_x]{z} \pder[v_z]{x}\right) \\
+\pder[\tau_{xz}]{t} = \mu\left( \pder[v_x]{z} + \pder[v_z]{x}\right) \\
 \end{aligned}
 \end{equation} 
 where we only added the source to the stress as to resemble an earthquake. The form of $b$ is independent of the model parameters and usually taken as a ricker wavelet. 
-writing this in the form of~\cref{eq:discretised_linear_system} gives $T(m) = 0$ and 
-\begin{equation}s = 
+writing this in the form of~\cref{eq:discretised_linear_system} gives 
+\begin{equation}
+T(m) = 0,\ 
+s = 
 \begin{bmatrix}
 v_x \\
 v_z \\
 \tau_{xx}\\
+\tau_{zz} \\
 \tau_{xz} \\
-\tau_{zx} \\
 \end{bmatrix},\ C\left(m\right) = -
 \begin{bmatrix}
 \vec \rho & 0 & 0 & 0 & 0 \\
@@ -420,7 +418,7 @@ Usually in literature, instead of the Lamé parameters, the S and P-wave velocit
 \end{equation}
 \subsubsection{Brocher relations}
 Usually seismic tomography and refraction studies of the earth crust report only the P-wave velocity $v_p$, while we need the density and S-wave velocity as well.
- In order to obtain realistic estimates of these parameters we can the relations derived by T. M. Brocher in 2005~\cite{Brocher2005} relating $v_p$ to $v_s$ and $v_p$ to $\rho$. These are derived from thousands of real world datasets of the earth's crust giving an empirical method to obtain $\rho$ and $v_s$ given known $v_p$(in km/s)
+ In order to obtain realistic estimates of these parameters we can the relations derived by T. M. Brocher in 2005~\cite{Brocher2005} relating $v_p$ to $v_s$ and $v_p$ to $\rho$. These are derived by studying many real world datasets of the earth's crust giving an empirical method to obtain $\rho$ and $v_s$ given known $v_p$(in km/s)
 \begin{equation}\label{eq:brochers_rho}
 \rho[g/cm^3] = 1.6612v_p - 0.4721v_p^2 + 0.0671v_p^3 - 0.0043 v_p^4 + 0.000106 v_p^5
 \end{equation}
@@ -433,7 +431,7 @@ which are only valid between $1.5 \ \text{km/s} < v_p < 8\   \text{km/s}$
 In any wave equation modeling, an important check is to measure the system energy, and see that if there is no source, energy remains constant in the system.
 For elastic waves the energy is given by a combination of kinetic energy $K$ of the moving particles and spring energy $T$ stored by displacing these particles from their equilibrium position following from Hooke's law.
 \begin{equation}\label{eq:elastic_system_energy}
-E = K + T = \frac{1}{2}\rho ||v||^2 + \frac{1}{2}\sum\sigma_{ij}\epsilon_{ij}
+E = K + T = \frac{1}{2}\rho ||v||^2 + \frac{1}{2}\sum\tau_{ij}\epsilon_{ij}
 \end{equation}
 
 
@@ -441,6 +439,11 @@ E = K + T = \frac{1}{2}\rho ||v||^2 + \frac{1}{2}\sum\sigma_{ij}\epsilon_{ij}
 
 \section{Elastic simulation results}
 
+\begin{itemize}
+    \item elastic forward homogeneous
+    \item elastic forward CPML with energies
+    \item Canadian foothills with free surface boundary conditions boundaries
+\end{itemize}
 
 \begin{figure*}[h]\centering % Using \begin{figure*} makes the figure take up the entire width of the page
 \includegraphics[width=0.5\linewidth]{"fig/Energy_cpml_comparison"}
@@ -466,6 +469,7 @@ We also tested the simulation on a bigger more realistic inhomogeneous model wit
 
 
 \section{FWI results}
+
 
 %--------------------------------------------------------------------------------------------------------------------
 
@@ -667,7 +671,7 @@ and the gradients according to~\cref{eq:gradient_discretised_linear}
 \begin{equation}
 \begin{aligned}
 \frac{d\chi}{dc} &=-\frac{2}{\rho c^3} \int_0^T\vec{\lambda_1}^T\vec{\dot{p}} \ dt \\
-\frac{d\chi}{d\rho} &= \int_0^T \frac{-1}{\rho^2 c^2} \vec{\lambda_1}^T \vec{\dot{p}} + \frac{1}{\rho^2}\left(\vec{\lambda_2}^T \pder[\vec{p}]{x} + \vec{\lambda_3}^T \pder[\vec{p}]{z}\right)\  dt\\
+\frac{d\chi}{d\rho} &= \int_0^T \frac{-1}{\rho^2 c^2} \vec{\lambda_1}^T \vec{\dot{p}} - \frac{1}{\rho^2}\left(\vec{\lambda_2}^T \pder[\vec{p}]{x} + \vec{\lambda_3}^T \pder[\vec{p}]{z}\right)\  dt\\
 \end{aligned}
 \end{equation}
 
