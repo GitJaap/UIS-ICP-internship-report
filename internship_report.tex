@@ -161,6 +161,19 @@
 %----------------------------------------------------------------------------------------
 
 \section{Introduction} % The \section*{} command stops section numbering
+Full waveform inversion can be used a tool to quantitatively image material properties of the earth, or tissue. 
+
+30 years ago -> ~\cite{Tarantola1986} proposed FWI. Now since 10 years the industry is making use of FWI in their processing workflow due to the gain in computing power.
+
+Initially mostly acoustic, but there is interest in modeling elastic waves, since you can see phenomena like: groundroll waves, surface waves ->(WHAT ELSE IS SPECIAL ABOUT ELASTIC). 
+
+FWI requires one to know the gradient of your guessed model with respect to measured shots, therefore the \emph{adjoint state method}~\cite{Plessix2006} makes this a lot more efficient. 
+
+This research was performed as part of an internship for the Instituto Colombia del Petróleo (ICP). The first goal was to model the isotropic 2D elastic wave equation, which is described in section ...
+The second goal was to find the adjoint operator and gradients for the elastic case. Since no explicit declaration is given yet for the elastic case in current literature and the adjoint state method is usually described in a very abstract way, this work shows an "engineers approach" to obtaining the adjoint system and gradient expressions for any general set of equations in sec .... This method is applied to the elastic case in sec ..., and more exampĺes are given in~\cref{sec:examples}.
+This method is subsequently tested by performing FWI on a test model described in sec ...
+
+
 
 %\addcontentsline{toc}{section}{Introduction} % Adds this section to the table of contents
 
@@ -216,18 +229,20 @@ Elastic waves in 2D isotropic media can be modeled by using only three parameter
 \rho \pder[v_z]{t} = \pder[\tau_{xz}]{x} + \pder[\tau_{zz}]{z} \\
 \pder[\tau_{xx}]{t} = \left(\lambda + 2\mu\right) \pder[v_x]{x} + \lambda \pder[v_z]{z} + b_{xx} \\
 \pder[\tau_{zz}]{t} = \left(\lambda + 2\mu\right) \pder[v_z]{z} + \lambda \pder[v_x]{x} + b_{zz} \\
-\pder[\tau_{xz}]{t} = \mu\left( \pder[v_x]{z} \pder[v_z]{x}\right) \\
+\pder[\tau_{xz}]{t} = \mu\left( \pder[v_x]{z} + \pder[v_z]{x}\right) \\
 \end{aligned}
 \end{equation} 
 where we only added the source to the stress as to resemble an earthquake. The form of $b$ is independent of the model parameters and usually taken as a ricker wavelet. 
-writing this in the form of~\cref{eq:discretised_linear_system} gives $T(m) = 0$ and 
-\begin{equation}s = 
+writing this in the form of~\cref{eq:discretised_linear_system} gives 
+\begin{equation}
+T(m) = 0,\ 
+s = 
 \begin{bmatrix}
 v_x \\
 v_z \\
 \tau_{xx}\\
+\tau_{zz} \\
 \tau_{xz} \\
-\tau_{zx} \\
 \end{bmatrix},\ C\left(m\right) = -
 \begin{bmatrix}
 \vec \rho & 0 & 0 & 0 & 0 \\
@@ -387,21 +402,49 @@ T &: \  & i \rightarrow i' &,\ j +\frac{1}{2} \rightarrow j' \\
 where $'$ stands for the index in the code, since we imagine them displaced from the origin.
 
 \subsection{CPML Absorbing boundaries}
-In this section we introduce the widely used CPML boundary conditions~\cite{Komatitsch2007}. This simulates the conditions that we have an numberically infeasible infinite domain by absorbing the waves that reach the boundaries. 
+In most seismic cases we have an infinite domain of our model, but we are just interested in a specific part of this domain. In order to simulate only this part without reflecting boundaries one needs to simulate "open" boundaries. This can be done by introducing an absorbing layer at the boundaries originally introduced as a Perfectly Matched Layer(PML)~\cite{Berenger1994} but later improved to a Convolutionary Perfectly Matched Layer(CPML)~\cite{Komatitsch2007} in order to reduce reflection for waves at grazing angle with the layer. 
+
+CPML consists changing the spatial derivatives seen in the wave equations inside the layer by adding an imaginary part. 
+
+
+In this section we introduce the widely used convolutional perfectly matched layer(CPML) boundary conditions~\cite{Komatitsch2007}, which are an improvement of the PML proposed 20 years earlier~\cite{Berenger1994}. This simulates having an infinite domain(which is numerically infeasible) by absorbing waves that reach the boundaries. 
 
 \subsection{Obtaining realistic model parameters}
+Modeling elastic waves requires knowledge of all three model parameters: the density $\rho$, and lamé parameters $\mu$ and $\lambda$.
+Usually in literature, instead of the Lamé parameters, the S and P-wave velocities are given since these can be read more inituitively. There are simple relations between the wavespeeds and Lamé parameters following from the elastic wave equations 
+\begin{equation}\label{eq:conversion_lame_to_velocity}
+\{\rho, \mu, \lambda\} \rightarrow \{\rho, v_s, v_p\}, \ \text{with} \ v_s=\sqrt{\frac{\mu}{\rho}}, \ v_p = \sqrt{\frac{\lambda+2\mu}{\rho}} 
+\end{equation}
 \subsubsection{Brocher relations}
-Brocher relations!\cite{Brocher2005}
-
+Usually seismic tomography and refraction studies of the earth crust report only the P-wave velocity $v_p$, while we need the density and S-wave velocity as well.
+ In order to obtain realistic estimates of these parameters we can the relations derived by T. M. Brocher in 2005~\cite{Brocher2005} relating $v_p$ to $v_s$ and $v_p$ to $\rho$. These are derived by studying many real world datasets of the earth's crust giving an empirical method to obtain $\rho$ and $v_s$ given known $v_p$(in km/s)
+\begin{equation}\label{eq:brochers_rho}
+\rho[g/cm^3] = 1.6612v_p - 0.4721v_p^2 + 0.0671v_p^3 - 0.0043 v_p^4 + 0.000106 v_p^5
+\end{equation}
+and 
+\begin{equation}\label{eq:brochers_vs}
+v_s[km/s] = 0.7857 - 1.2344v_p + 0.7949v_p^2 - 0.1238v_p^3 + 0.0064 v_p^4
+\end{equation}
+which are only valid between $1.5 \ \text{km/s} < v_p < 8\   \text{km/s}$ 
 \subsection{Total system energy}
+In any wave equation modeling, an important check is to measure the system energy, and see that if there is no source, energy remains constant in the system.
+For elastic waves the energy is given by a combination of kinetic energy $K$ of the moving particles and spring energy $T$ stored by displacing these particles from their equilibrium position following from Hooke's law.
 \begin{equation}\label{eq:elastic_system_energy}
-E = K + T = \frac{1}{2}\rho ||v||^2 + \frac{1}{2}\sum\sigma_{ij}\epsilon_{ij}
+E = K + T = \frac{1}{2}\rho ||v||^2 + \frac{1}{2}\sum\tau_{ij}\epsilon_{ij}
 \end{equation}
 
 
 %--------------------------------------------------------------------------------------------------------------------
 
-\section{Simulation results}
+\section{Elastic simulation results}
+
+\begin{itemize}
+    \item elastic forward homogeneous
+    \item elastic forward CPML with energies
+    \item Canadian foothills with free surface boundary conditions boundaries
+\end{itemize}
+
+\section{FWI results}
 
 
 %--------------------------------------------------------------------------------------------------------------------
@@ -604,7 +647,7 @@ and the gradients according to~\cref{eq:gradient_discretised_linear}
 \begin{equation}
 \begin{aligned}
 \frac{d\chi}{dc} &=-\frac{2}{\rho c^3} \int_0^T\vec{\lambda_1}^T\vec{\dot{p}} \ dt \\
-\frac{d\chi}{d\rho} &= \int_0^T \frac{-1}{\rho^2 c^2} \vec{\lambda_1}^T \vec{\dot{p}} - \frac{1}{\rho^2}\left(\vec{\lambda_2}^T \pder[\vec{v_x}]{x} + \vec{\lambda_3}^T \pder[\vec{v_z}]{z}\right)\  dt\\
+\frac{d\chi}{d\rho} &= \int_0^T \frac{-1}{\rho^2 c^2} \vec{\lambda_1}^T \vec{\dot{p}} - \frac{1}{\rho^2}\left(\vec{\lambda_2}^T \pder[\vec{p}]{x} + \vec{\lambda_3}^T \pder[\vec{p}]{z}\right)\  dt\\
 \end{aligned}
 \end{equation}
 
