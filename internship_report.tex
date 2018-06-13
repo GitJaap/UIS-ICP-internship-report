@@ -30,6 +30,7 @@
 \usepackage{lipsum} % Required to insert dummy text. To be removed otherwise
 
 \usepackage{amsmath}
+\usepackage{afterpage}
 \DeclareMathOperator{\Var}{Var}
 
 \newcommand{\pder}[2][]{\frac{\partial#1}{\partial#2}}
@@ -439,6 +440,29 @@ E = K + T = \frac{1}{2}\rho ||v||^2 + \frac{1}{2}\sum\sigma_{ij}\epsilon_{ij}
 %--------------------------------------------------------------------------------------------------------------------
 
 \section{Elastic simulation results}
+
+
+\begin{figure*}[h]\centering % Using \begin{figure*} makes the figure take up the entire width of the page
+\includegraphics[width=0.5\linewidth]{"fig/Energy_cpml_comparison"}
+\caption{Energy versus time with and without CPML boundaries for the plots of~\cref{fig:sim_homogeneous_cpml}. CPML parameters used are $R=0.001$, $\kappa = 1$, $n_{cpml}=10$. The first drop of energy is when the wave reaches the boundary, the second drop is due to the residual reflections reaching the boundary once more.}
+\label{fig:sim_energy_cpml_no_cpml}
+\end{figure*}
+
+\afterpage{
+\begin{figure}[p]\centering % Using \begin{figure*} makes the figure take up the entire width of the page
+\includegraphics[width=0.8\linewidth]{"fig/field_vx"}
+\includegraphics[width=0.8\linewidth]{"fig/field_vx_cpml"}
+\caption{Elastic wave propagation in homogeneous media. Top 4 images show the simulation with reflecting boundary conditions and the bottom four with CPML active, giving a clear decrease in reflection amplitude. $V_p=2500$m/s, $V_s=430$m/s, $\rho=1750$m/s, $f_{source}=10$Hz, $n_x=n_z=220$, $d_x=d_z=10$m, $dt=0.3$ms}
+\label{fig:sim_homogeneous_cpml}
+\end{figure}
+\clearpage
+}
+
+\subsection{Canadian foothills model with free surface boundary conditions}
+We also tested the simulation on a bigger more realistic inhomogeneous model with free surface boundary conditions. 
+
+
+
 
 
 \section{FWI results}
