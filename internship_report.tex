@@ -20,7 +20,7 @@
 %	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
 %----------------------------------------------------------------------------------------
 
-\documentclass[fleqn,11pt]{SelfArx} % Document font size and equations flushed left
+\documentclass[fleqn,10pt]{SelfArx} % Document font size and equations flushed left
 \usepackage[scaled]{helvet}
 \renewcommand\familydefault{\sfdefault} 
 \usepackage[T1]{fontenc}
@@ -218,8 +218,9 @@ f\left(\vec{s}\right) =\frac{1}{2} \sum_{R}^{N_R}||s_{y_R} - d_{y_R}||^2
 \end{equation}
 where the sum goes over all receiver positions. Note that $f\left(\vec{s}\right)$ does not depend directly on the model parameters $\vec{m}$ making the gradient expression simpler since $\pder[f]{\vec{m}} = 0$. We thus obtain
 \begin{equation}
-\pder[f]{\vec{s}} =  \sum_{R}^{N_R}||s_{y_R} - d_{y_R}|| 
+\pder[f]{\vec{s}} =  \sum_{R}^{N_R}s_{y_R} - d_{y_R} 
 \end{equation}
+which are the well known residuals injected as a source for the adjoint equations. 
 
 
 \subsection{Adjoint and gradients of the elastic wave equation}
@@ -246,8 +247,8 @@ v_z \\
 \tau_{xz} \\
 \end{bmatrix},\ C\left(m\right) = -
 \begin{bmatrix}
-\vec \rho & 0 & 0 & 0 & 0 \\
-0 & \vec \rho & 0 & 0 & 0 \\
+\rho & 0 & 0 & 0 & 0 \\
+0 & \rho & 0 & 0 & 0 \\
 0 & 0 & 1 & 0 & 0 \\
 0 & 0 & 0 & 1 & 0 \\
 0 & 0 & 0 & 0 & 1 \\
@@ -365,7 +366,7 @@ I & 0 & 0 & 0 & 0 \\
 
 %-------------------------------------------------------------------------------------------------------------------
 
-\section{Numerical implementation}
+\section{Numerical implementation of the elastic wave equation}
 Chapter intro here
 
 \subsection{Staggered grid discrete equations}
@@ -426,9 +427,9 @@ and
 \begin{equation}\label{eq:brochers_vs}
 v_s[km/s] = 0.7857 - 1.2344v_p + 0.7949v_p^2 - 0.1238v_p^3 + 0.0064 v_p^4
 \end{equation}
-which are only valid between $1.5 \ \text{km/s} < v_p < 8\   \text{km/s}$ 
+which are only valid between $1.5 \ \text{km/s} < v_p < 8\   \text{km/s}$. This then allows us to create synthetic models of all other parameters given that we have a model for $v_p$.
 \subsection{Total system energy}
-In any wave equation modeling, an important check is to measure the system energy, and see that if there is no source, energy remains constant in the system.
+In any wave equation modeling, an important check is to measure the system energy, and see that if there is no source active and no absorbing boundaries, energy remains constant in the system.
 For elastic waves the energy is given by a combination of kinetic energy $K$ of the moving particles and spring energy $T$ stored by displacing these particles from their equilibrium position following from Hooke's law.
 \begin{equation}\label{eq:elastic_system_energy}
 E = K + T = \frac{1}{2}\rho ||v||^2 + \frac{1}{2}\sum\tau_{ij}\epsilon_{ij}
@@ -445,11 +446,11 @@ E = K + T = \frac{1}{2}\rho ||v||^2 + \frac{1}{2}\sum\tau_{ij}\epsilon_{ij}
     \item Canadian foothills with free surface boundary conditions boundaries
 \end{itemize}
 
-\begin{figure*}[h]\centering % Using \begin{figure*} makes the figure take up the entire width of the page
+\begin{figure}[h]\centering % Using \begin{figure*} makes the figure take up the entire width of the page
 \includegraphics[width=0.5\linewidth]{"fig/Energy_cpml_comparison"}
 \caption{Energy versus time with and without CPML boundaries for the plots of~\cref{fig:sim_homogeneous_cpml}. CPML parameters used are $R=0.001$, $\kappa = 1$, $n_{cpml}=10$. The first drop of energy is when the wave reaches the boundary, the second drop is due to the residual reflections reaching the boundary once more.}
 \label{fig:sim_energy_cpml_no_cpml}
-\end{figure*}
+\end{figure}
 
 \afterpage{
 \begin{figure}[p]\centering % Using \begin{figure*} makes the figure take up the entire width of the page
@@ -466,7 +467,15 @@ We also tested the simulation on a bigger more realistic inhomogeneous model wit
 
 
 
+\section{Numerical implementation of Full Waveform Inversion}
 
+\begin{enumerate}
+	\item Adjoint implementation
+	\item Algorithm overview for modeling forward and adjoint.
+	\item Gradient calculation 
+	\item Algorithm overview for gradient calc in between?
+	\item LGBFS updating (short please)
+\end{enumerate}
 
 \section{FWI results}
 
