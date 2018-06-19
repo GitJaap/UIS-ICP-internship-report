@@ -736,7 +736,7 @@ For the FWI we took 2 standard gradient descend steps before applying L-BFGS. Th
 \end{figure}
 \clearpage
 \subsection{Rescaled version of realistic seismic testing model}
-\begin{figure}[!h]\label{fig:cps_model}
+\begin{figure}[!h]\label{fig:cana_model}
 \hspace*{-0.4in}
 \includegraphics[width=1.15\textwidth]{fig/cana_models.png}
 \caption{Realistic synthetic models~\cite{Gray1995}. The model was rescaled by about a factor 3.5 from the original as to fit in a $\Delta x = \Delta z =25$m with only 243 by 143 grid points.}
@@ -748,7 +748,13 @@ For the FWI we took 2 standard gradient descend steps before applying L-BFGS. Th
 \includegraphics[width=1.20\textwidth]{fig/cana_fwi_three_params_smooth_MSE}
 \caption{Three parameter inversion result with a smooth starting model and the original taken as~\cref{fig:cps_model}}
 \end{figure}
-
+\clearpage
+\subsection{Windowed version of realistic seismic testing model}
+\begin{figure}[!h]\label{fig:cana_real_model}
+\hspace*{-0.4in}
+\includegraphics[width=1.15\textwidth]{fig/cana_real_models.png}
+\caption{Realistic synthetic models~\cite{Gray1995} on real scale. The model was windowed and $dx$ was altered as to fit in the allowed amount of memory.}
+\end{figure}
 \clearpage
 %--------------------------------------------------------------------------------------------------------------------
 
