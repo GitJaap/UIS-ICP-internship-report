@@ -20,7 +20,7 @@
 %	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
 %----------------------------------------------------------------------------------------
 
-\documentclass[fleqn,10pt]{SelfArx} % Document font size and equations flushed left
+\documentclass[10pt]{SelfArx} % Document font size and equations flushed left
 \usepackage[scaled]{helvet}
 \renewcommand\familydefault{\sfdefault} 
 \usepackage[T1]{fontenc}
@@ -28,17 +28,19 @@
 \usepackage[english]{babel} % Specify a different language here - english by default
 
 \usepackage{lipsum} % Required to insert dummy text. To be removed otherwise
-
+\usepackage{subfig}
 \usepackage{amsmath}
 \usepackage{afterpage}
 \DeclareMathOperator{\Var}{Var}
-
 \newcommand{\pder}[2][]{\frac{\partial#1}{\partial#2}}
 \newcommand{\ppder}[2][]{\frac{\partial^2#1}{\partial#2^2}}
 \usepackage{amsthm}
 \usepackage[nice]{nicefrac}
 \theoremstyle{definition}
 \newtheorem{exmp}{Example}[section]
+
+\usepackage{algorithm}% http://ctan.org/pkg/algorithms
+\usepackage{algpseudocode}% http://ctan.org/pkg/algorithmicx
 
 
 %------------------------
@@ -199,7 +201,7 @@ Say we have a model representing the earth (in seismic applications) or tissue (
 where $T, C, A$ are big matrices of $(N_g \times d_s) \times (N_g \times d_s)$ coefficients which follow from the discretization in space of a PDE system, $\vec{b}\left(\vec{m}\right)$ is a vector of the same length of $\vec{s}$ which contains the source terms, $\chi$ denotes the total cost function and we denote time explicitely by taking the integral of some function $f$ since usually we simplify each cost function into this form. 
 
 \subsubsection{Gradients and adjoint}
-We can apply~\cref{eq:general_gradient} of~\cref{sec:general_math} to the system of~\cref{eq:discretised_linear_system} and find the following expression for the total gradient with respect to \emph{all} model parameters
+The goal of the adjoint state method is avoiding the calculation of the Frechet derivatives $\pder{\chi}{m}$ since they require the amount of forward modeling evaluations to scale with the grid size of the model. We can apply~\cref{eq:general_gradient} of~\cref{sec:general_math} to the system of~\cref{eq:discretised_linear_system} and find the following simpler expression for the total gradient with respect to \emph{all} model parameters
 \begin{equation}\label{eq:gradient_discretised_linear}
 \frac{d\chi}{d\vec{m}} = \int_0^T \pder[f]{\vec{m}} + \vec{\lambda}^T \left(\pder[T]{\vec{m}}\ddot{\vec{s}} - \pder[C]{\vec{m}}\dot{\vec{s}} - \pder[A]{\vec{m}}\vec{s} -\pder[b]{\vec{m}}\right) dt
 \end{equation}
@@ -217,7 +219,7 @@ In most cases the cost function is given by the misfit between observed data $d$
 f\left(\vec{s}\right) =\frac{1}{2} \sum_{R}^{N_R}||s_{y_R} - d_{y_R}||^2
 \end{equation}
 where the sum goes over all receiver positions. Note that $f\left(\vec{s}\right)$ does not depend directly on the model parameters $\vec{m}$ making the gradient expression simpler since $\pder[f]{\vec{m}} = 0$. We thus obtain
-\begin{equation}
+\begin{equation}\label{eq:adjoint_source}
 \pder[f]{\vec{s}} =  \sum_{R}^{N_R}s_{y_R} - d_{y_R} 
 \end{equation}
 which are the well known residuals injected as a source for the adjoint equations. 
@@ -379,37 +381,114 @@ The numerical equations are then given by (using a 2nd order central difference 
 
 \begin{equation}
 \left\{
-\begin{split}
+\begin{aligned}
 U_{i,j}^{n+\frac{1}{2}}  &= U_{i,j}^{n-\frac{1}{2}} + \frac{\Delta t}{\rho_{i,j}}\left[ D_xX_{i,j}^n + D_zT^n_{i,j}\right] \\
 V_{i+\frac{1}{2},j+\frac{1}{2}}^{n+\frac{1}{2}}  &= V_{i+\frac{1}{2},j+\frac{1}{2}}^{n-\frac{1}{2}} + \frac{\Delta t}{\rho_{i+\frac{1}{2},j+\frac{1}{2}}}\left[ D_xT_{i+\frac{1}{2},j+\frac{1}{2}}^n + D_zZ^n_{i+\frac{1}{2},j+\frac{1}{2}}\right] \\
 X_{i+\frac{1}{2},j}^{n+1}  &= X_{i+\frac{1}{2},j}^{n} + \Delta t\left[ \left(\lambda_{i+\frac{1}{2},j} + 2 \mu_{i+\frac{1}{2},j}\right)D_xU_{i+\frac{1}{2},j}^{n+\frac{1}{2}} + \lambda_{i+\frac{1}{2},j} D_zV^{n+\frac{1}{2}}_{i+\frac{1}{2},j}\right] \\
 Z_{i+\frac{1}{2},j}^{n+1}  &= Z_{i+\frac{1}{2},j}^{n} + \Delta t\left[ \left(\lambda_{i+\frac{1}{2},j} + 2 \mu_{i+\frac{1}{2},j}\right)D_zV_{i+\frac{1}{2},j}^{n+\frac{1}{2}} + \lambda_{i+\frac{1}{2},j} D_xU^{n+\frac{1}{2}}_{i+\frac{1}{2},j}\right] \\
 T_{i,j+\frac{1}{2}}^{n+1}  &= T_{i,j+\frac{1}{2}}^{n} + \mu_{i,j+\frac{1}{2}}\Delta t\left[ D_zU_{i,j+\frac{1}{2}}^{n+\frac{1}{2}} + D_xV^{n+\frac{1}{2}}_{i,j+\frac{1}{2}}\right] \\
-\end{split}\right.
+\end{aligned}\right.
 \end{equation}
 where for the simplest second order differential operator $D_x A^n_{i,j} = \frac{A^n_{i+\frac{1}{2},j} - A^n_{i-\frac{1}{2},j}}{\Delta_x}$ and $D_z A^n_{i,j} = \frac{A^n_{i,j+\frac{1}{2}} - A^n_{i,j-\frac{1}{2}}}{\Delta_z}$. $n$ denotes the discrete time step, $i,j$ the $x,z$ coordinates respectively, and $\Delta t, \Delta x, \Delta z$ are the stepsizes taken into each direction respectively.
+In~\cref{fig:staggered_grid} the staggered grid is shown schematically together with a table to explain the index translations used to transform from the actual implementation to the discrete equations shown above. 
+\begin{figure}[hbt]
+\caption{(a) Schematic of the staggered grid. The square indicates the position of the velocity field $U$, the diamond that of $V$, the triangle that of $X,Z$ and the upside down triangle that of $T$. Blue indicates that the field is evaluated at time $n+1/2$ and red at time $n$. (b) Table of the staggered grid computational array index conversion. Shows how the 2D computational array indexes for the field arrays are transformed for the staggered grid. For example: if we access array element $V[i,j]$ in the code we obtain the field $v_z$ at real position $i+1/2, j+1/2$ in the grid.}
+\label{fig:staggered_grid}
+\vspace{5pt}
+\centering
+\subfloat[][]{
+\includegraphics[width=0.25\textwidth]{fig/staggered_grid.png}
+}
+\qquad
+\subfloat[][]{
+ \vspace{0pt}
+    \centering
+    \begin{tabular}{lrr}
+    \toprule
+    Field & index i transform & index j transform \\
+    \midrule
+    $U (v_x)$ & $i$ & $j$ \\
+    $V (v_z)$ & $i + 1/2$ & $j + 1/2$ \\
+    $X (\tau_{xx})$ & $i + 1/2$ & $j$ \\
+    $Z (\tau_{zz})$ & $i + 1/2$ & $j$ \\
+    $T (\tau_{xz})$ & $i$ & $j + 1/2$ \\
 
-Note that in the actual implementation all arrays start at index 0. Therefore the indexes of U remain just $i,j$, but for the others we get 
+    \bottomrule
+    \end{tabular}
+     \vspace{0pt}
+    \label{tab:label}
+}
+
+\end{figure}
+
+\afterpage{
+\begin{figure}[p]\centering % Using \begin{figure*} makes the figure take up the entire width of the page
+\includegraphics[width=0.8\linewidth]{"fig/field_vx"}
+\includegraphics[width=0.8\linewidth]{"fig/field_vx_cpml"}
+\caption{Elastic wave propagation in homogeneous media. Top 4 images show the simulation with reflecting boundary conditions and the bottom four with CPML active, giving a clear decrease in reflection amplitude. $V_p=2500$m/s, $V_s=430$m/s, $\rho=1750$m/s, $f_{source}=10$Hz, $n_x=n_z=220$, $d_x=d_z=10$m, $dt=0.3$ms}
+\label{fig:sim_homogeneous_cpml}
+\end{figure}
+\clearpage
+}
+\subsection{Ricker wavelet source function}
+We used a source of the form
+\begin{equation}
+f\left(t\right) = \left(1 - 2\pi^2 f_q^2 (t-t_0)^2\right) e^{-\pi^2f_q^2 (t-t_0)^2}
+\end{equation}
+where $f_q$ is the desired center source frequency, $t_0$ the time offset (taken as $\frac{1}{f_q}$ usually). Note that $t_0$ is important since if you start with a non-zero source the FD modeling will become unstable. The source was added equally to both the horizontal and vertical stress $\tau_{xx}$ and $\tau_{zz}$ at each timestep.
+\subsection{CPML Absorbing boundaries}
+In most seismic cases we have an infinite domain of our model, but we are just interested in a specific part of this domain. In order to simulate only this part without reflecting boundaries one needs to simulate "open" boundaries.
+This is performed using Perfectly Matched Layers(PML)~\cite{Berenger1994}. Simply stated PML can be seen as adding as changing the coordinates to complex values in the boundary layers of the grid in which the wave travels, this then exponentially dampens any plane wave traveling through the boundary layer of which the strength depends on the incidence angle, damping less for grazing incidence. Another property of PML is that the reflection coefficient is exactly zero for all incident angles before discretization. The original PML required to extra fields in time, so therefore the Convolutionary PML was introduced(CPML)~\cite{Roden2000}, which allows for the use of memory variables to keep a memory efficient solution and finally and improved version of CPML was introduced to decrease the reflections at grazing incidence angles at the cost of adding extra tunable parameters~\cite{Komatitsch2007}. 
+
+CPML can be easily implemented, since all one needs to do is replace all the finite difference operations on the fields inside the CPML layer by CPML damped variant. This is performed by adding so called memory variables which have their own simple governing differential equations. For the field $K\in\{U,V,X,Z,T\}$ and derivative direction $s\in\{x,z\}$ this becomes
+\begin{equation}
+D_sK^n_{i,j} \rightarrow \frac{D_sK^n_{i,j}}{\kappa_s} + M_{D_sK|i,j}^n
+\end{equation}
+where $\kappa_s$ is usually taken as 1 and the memory variable is updated each timestep by
+\begin{equation}
+     M_{D_sK|i,j}^n = b_s M_{D_sK|i,j}^{n-1} + a_s D_sK^n_{i,j}
+\end{equation} 
+the damping coefficients $a_s, b_s$ are given by the following formulas
 \begin{equation}
 \left\{
-\begin{split}
-U &: \  & i \rightarrow i' &,\ j \rightarrow j' \\ 
-V &: \  & i +\frac{1}{2} \rightarrow i' &,\ j +\frac{1}{2} \rightarrow j' \\ 
-X &: \  & i +\frac{1}{2} \rightarrow i' &,\ j \rightarrow j' \\ 
-Z &: \  & i +\frac{1}{2} \rightarrow i' &,\ j \rightarrow j' \\ 
-T &: \  & i \rightarrow i' &,\ j +\frac{1}{2} \rightarrow j' \\ 
-\end{split}\right.
+\begin{aligned}
+a_s &= \frac{d_s}{d_s + \alpha_s}\left(b_s - 1\right) \\
+b_s &= e ^ {-(d_s + \alpha_s)\Delta t}
+\end{aligned}\right.
 \end{equation}
+where all parameters are chosen following~\cite{Komatitsch2007}. They pick $\alpha_s$ a linearly varying from $\alpha_{max}=\pi f_0$ in the entry of the CPML layer to 0 at the end of the layer and $f_0$ is the center source frequency. $d_s = d_0\left(\frac{\Delta_{cpml} s}{L}\right)^N$ where $\Delta_{cpml} s$ Is the amount of meters inside the CPML layer in direction $s$, $L$ is the total length of the CPML layer (usually taken as the length of 10 grid points), N is the damping order (taken as 2)~\cite{Collino2001}, $d_0$ is given by $d_0=-\left(N +1\right)v_p \frac{\log\left(R_c\right)}{2L} \approx 341.9$ when we take a theoretical reflection coefficient $R_c=0.001$ ~\cite{Collino2001}. Note that attention needs to be payed to the values of $a_s$ and $b_s$ at half grid points of the staggered grid, there they should be interpolated as stressed in~\cite{Komatitsch2007}. 
+For completeness the full discrete equations are given below inside the CPML layer
+\begin{equation}\label{eq:elastic_discretized_written_out}
+\left\{
+\begin{aligned}
+U_{i,j}^{n+\frac{1}{2}}  &= U_{i,j}^{n-\frac{1}{2}} + \frac{\Delta t}{\rho_{i,j}}\left[ \frac{D_xX_{i,j}^n}{\kappa_{x_i}} + M_{D_xX|i,j}^{n+\frac{1}{2}} + \frac{D_zT^n_{i,j}}{\kappa_{z_j}} + M_{D_zT|i,j}^{n+\frac{1}{2}}\right] \\
+V_{i+\frac{1}{2},j+\frac{1}{2}}^{n+\frac{1}{2}}  &= V_{i+\frac{1}{2},j+\frac{1}{2}}^{n-\frac{1}{2}} + \frac{\Delta t}{\rho_{i+\frac{1}{2},j+\frac{1}{2}}}\left[ \frac{D_xT_{i+\frac{1}{2},j+\frac{1}{2}}^n}{\kappa_{x_{i+\frac{1}{2}}}} + M_{D_xT|i + \frac{1}{2},j + \frac{1}{2}}^{n+\frac{1}{2}} + \frac{D_zZ^n_{i+\frac{1}{2},j+\frac{1}{2}}}{\kappa_{z_{j+\frac{1}{2}}}} + M_{D_zZ|i + \frac{1}{2},j + \frac{1}{2}}^{n+\frac{1}{2}}\right] \\
+X_{i+\frac{1}{2},j}^{n+1}  &= X_{i+\frac{1}{2},j}^{n} + \Delta t\left[ \left(\lambda_{i+\frac{1}{2},j} + 2 \mu_{i+\frac{1}{2},j}\right)\left(\frac{D_xU_{i+\frac{1}{2},j}^{n+\frac{1}{2}}}{\kappa_{x_{i+\frac{1}{2}}}} + M_{D_xU|i + \frac{1}{2},j}^{n+1}\right) + \lambda_{i+\frac{1}{2},j} \left(\frac{D_zV^{n+\frac{1}{2}}_{i+\frac{1}{2},j}}{\kappa_{z_j}}+ M_{D_zV|i + \frac{1}{2},j}^{n+1}\right)\right] \\
+Z_{i+\frac{1}{2},j}^{n+1}  &= Z_{i+\frac{1}{2},j}^{n} + \Delta t\left[ \left(\lambda_{i+\frac{1}{2},j} + 2 \mu_{i+\frac{1}{2},j}\right)\left(\frac{D_zV_{i+\frac{1}{2},j}^{n+\frac{1}{2}}}{\kappa_{z_j}} + M_{D_zV|i + \frac{1}{2},j}^{n+1}\right) + \lambda_{i+\frac{1}{2},j}\left(\frac{D_xU^{n+\frac{1}{2}}_{i+\frac{1}{2},j}}{\kappa_{x_{i+\frac{1}{2}}}} + M_{D_xU|i + \frac{1}{2},j}^{n+1}\right)\right] \\
+T_{i,j+\frac{1}{2}}^{n+1}  &= T_{i,j+\frac{1}{2}}^{n} + \mu_{i,j+\frac{1}{2}}\Delta t\left[ \frac{D_zU_{i,j+\frac{1}{2}}^{n+\frac{1}{2}}}{\kappa_{z_{j+\frac{1}{2}}}}  + M_{D_zU|i,j+\frac{1}{2}}^{n+1} + \frac{D_xV^{n+\frac{1}{2}}_{i,j+\frac{1}{2}}}{\kappa_{x_i}} + M_{D_xV|i,j+\frac{1}{2}}^{n+1}\right] \\
+\end{aligned}\right.
+\end{equation}
+\subsubsection{Discussion on free CPML parameters}
+The amount of extra tunable parameters CPML seems to give looks overwhelming, but after following the recipe the only tunable parameters that remain are $R_c$, $L$, $\kappa$ and $\alpha_{max}$,$\kappa$ is taken as a constant $\kappa=1$ (although~\cite{Roden2000} introduced a variable $\kappa$ because it can have an effect on evanescent waves in the electromagnetic case, in the seismic case~\cite{Komatitsch2007} state that is of little influence and therefore taken constant) and $\alpha_{max}=\pi f_0$ depends on the source so is not really free at the end. This results solely in having to choose $R_c$ and $L$ which in this research always remained at $R_c=0.001$ and $L=10\Delta_x$ eliminating the need for retuning the CPML variables during FWI. Although it's good practice to keep checking if the system energy really drops by at least a few orders of magnitude when turning on CPML as shown in~\cref{fig:sim_energy_cpml_no_cpml}.
 
-where $'$ stands for the index in the code, since we imagine them displaced from the origin.
+\begin{algorithm}
+\caption{Forward modeling}\label{alg:forward_prop}
+\begin{algorithmic}[1]
+\Function{Propagate Forward}{ }
+\State $X \gets$ \Call{source}{0}, \ $Z \gets$ \Call{source}{0} \Comment{add initial earthquake stress source for $\tau_{xx}, \tau_{zz}$}
+\For{$it = 1$ and $it < N_t$}
+\State $U[it], V[it] \gets $ \Call{Propagate Velocity}{$X, Z, T$} \Comment{Step~\cref{eq:elastic_discretized_written_out}}
+\State $X, Z, T \gets $ \Call{Propagate Stress}{$U[it], V[it]$} 
+\State $X \gets$ \Call{source}{$it$}, \ $Z \gets$ \Call{source}{$it$} \Comment{add earthquake stress source for $\tau_{xx}, \tau_{zz}$}
+\State $it \gets it + 1$
+\EndFor
+\EndFunction
+\end{algorithmic}
+\end{algorithm} 
+%This can be done by introducing an absorbing layer at the boundaries originally introduced as a Perfectly Matched Layer(PML)~\cite{Berenger1994} but later improved to a Convolutionary Perfectly Matched Layer(CPML)~\cite{Komatitsch2007} in order to reduce reflection for waves at grazing angle with the layer. 
 
-\subsection{CPML Absorbing boundaries}
-In most seismic cases we have an infinite domain of our model, but we are just interested in a specific part of this domain. In order to simulate only this part without reflecting boundaries one needs to simulate "open" boundaries. This can be done by introducing an absorbing layer at the boundaries originally introduced as a Perfectly Matched Layer(PML)~\cite{Berenger1994} but later improved to a Convolutionary Perfectly Matched Layer(CPML)~\cite{Komatitsch2007} in order to reduce reflection for waves at grazing angle with the layer. 
 
-CPML consists changing the spatial derivatives seen in the wave equations inside the layer by adding an imaginary part. 
-
-
-In this section we introduce the widely used convolutional perfectly matched layer(CPML) boundary conditions~\cite{Komatitsch2007}, which are an improvement of the PML proposed 20 years earlier~\cite{Berenger1994}. This simulates having an infinite domain(which is numerically infeasible) by absorbing waves that reach the boundaries. 
+%In this section we introduce the widely used convolutional perfectly matched layer(CPML) boundary conditions~\cite{Komatitsch2007}, which are an improvement of the PMroposed 20 years earlier~\cite{Berenger1994}. This simulates having an infinite domain(which is numerically infeasible) by absorbing waves that reach the boundaries. 
 
 \subsection{Obtaining realistic model parameters}
 Modeling elastic waves requires knowledge of all three model parameters: the density $\rho$, and lamé parameters $\mu$ and $\lambda$.
@@ -434,49 +513,176 @@ For elastic waves the energy is given by a combination of kinetic energy $K$ of 
 \begin{equation}\label{eq:elastic_system_energy}
 E = K + T = \frac{1}{2}\rho ||v||^2 + \frac{1}{2}\sum\tau_{ij}\epsilon_{ij}
 \end{equation}
-
-
-%--------------------------------------------------------------------------------------------------------------------
-
-\section{Elastic simulation results}
-
-\begin{itemize}
-    \item elastic forward homogeneous
-    \item elastic forward CPML with energies
-    \item Canadian foothills with free surface boundary conditions boundaries
-\end{itemize}
-
 \begin{figure}[h]\centering % Using \begin{figure*} makes the figure take up the entire width of the page
 \includegraphics[width=0.5\linewidth]{"fig/Energy_cpml_comparison"}
 \caption{Energy versus time with and without CPML boundaries for the plots of~\cref{fig:sim_homogeneous_cpml}. CPML parameters used are $R=0.001$, $\kappa = 1$, $n_{cpml}=10$. The first drop of energy is when the wave reaches the boundary, the second drop is due to the residual reflections reaching the boundary once more.}
 \label{fig:sim_energy_cpml_no_cpml}
 \end{figure}
 
-\afterpage{
-\begin{figure}[p]\centering % Using \begin{figure*} makes the figure take up the entire width of the page
-\includegraphics[width=0.8\linewidth]{"fig/field_vx"}
-\includegraphics[width=0.8\linewidth]{"fig/field_vx_cpml"}
-\caption{Elastic wave propagation in homogeneous media. Top 4 images show the simulation with reflecting boundary conditions and the bottom four with CPML active, giving a clear decrease in reflection amplitude. $V_p=2500$m/s, $V_s=430$m/s, $\rho=1750$m/s, $f_{source}=10$Hz, $n_x=n_z=220$, $d_x=d_z=10$m, $dt=0.3$ms}
-\label{fig:sim_homogeneous_cpml}
-\end{figure}
-\clearpage
-}
+\subsection{Free surface boundary conditions}
+Until now the boundary conditions was either assumed infinite or reflecting. In reality one often encounters free surface boundary conditions which is defined by
+\begin{equation}\label{eq:free_surface_conditions}
+\left\{
+\begin{aligned}
+\tau_{xx} = 0 \\
+\tau_{xz} = 0
+\end{aligned}
+\right.
+\end{equation}
+at the boundary and signifies that there is no normal and shear stress at the surface. The waves resulting from this boundary conditions are called Rayleigh-waves after their discoverer which travel along the surface with a speed much slower than the P and S waves. The boundary conditions in this work were simply implemented by setting the stresses at the boundary explicitly to zero. This works for planar surface conditions but gives instabilities when more complex surface topologies are considered. A solution to this would be to use either a stress-image technique~\cite{Levander1988}, or in the case of a interface with vacuum one can use a more advanced parameter averaging scheme~\cite{Zeng2012}.
 
-\subsection{Canadian foothills model with free surface boundary conditions}
-We also tested the simulation on a bigger more realistic inhomogeneous model with free surface boundary conditions. 
+%--------------------------------------------------------------------------------------------------------------------
+%\begin{figure}[p]\centering % Using \begin{figure*} makes the figure take up the entire width of the page
+%\subfloat[][]{
+%\includegraphics[width=0.55\linewidth]{fig/candian_shots_u_test}
+%}
+%\subfloat[][]{
+%\includegraphics[width=0.56\linewidth]{fig/canadian_shots_v_test}
+%}
+%\caption{Elastic wave propagation in homogeneous media. Top 4 images show the simulation with reflecting boundary conditions and the bottom four with CPML active, giving a clear decrease in reflection amplitude. $V_p=2500$m/s, $V_s=430$m/s, $\rho=1750$m/s, $f_{source}=10$Hz, $n_x=n_z=220$, $d_x=d_z=10$m, $dt=0.3$ms}
+%\label{fig:shots_canadian}
+%\end{figure}
 
+%\begin{figure}
+%\includegraphics[width=1\textwidth]{fig/canadian_model_test.PNG}
+%\end{figure}
 
+\section{Implementation Full Waveform Inversion}
 
-\section{Numerical implementation of Full Waveform Inversion}
+\subsection{Adjoint back-propagation}
+To avoid approximating $\pder[\chi]{dm}$ numerically by evaluating the forward model at least  $2 \times N_x \times N_z$ times we use the adjoint state method as described in~\cref{sec:discretized_math}. The discrete version of our derived set of continuous equations given in~\cref{eq:elastic_adjoint} is for a central 2nd order in time and arbitrary order in space by
+\begin{equation}\label{eq:discretized_elastic_adjoint_written_out}
+    \begin{aligned}
+    \overline{U}^{n-\frac{1}{2}}_{i,j} &= \overline{U}^{n+\frac{1}{2}}_{i,j} - \frac{\Delta t}{\rho_{i,j}} \left(D_x\left[\left(\lambda_{i,j} + 2\mu_{i,j}\right)\overline{X}_{i,j}^n\right] + D_x\left[\lambda_{i,j} \overline{Z}^n_{i,j}\right] + D_z\left[\mu_{i,j}\overline{T}_{i,j}^n\right] \right) \\
+    \overline{Z}^{n-\frac{1}{2}}_{i+\frac{1}{2},j+\frac{1}{2}} &= \overline{Z}^{n+\frac{1}{2}}_{i+\frac{1}{2}, j+\frac{1}{2}} - \frac{\Delta t}{\rho_{i+\frac{1}{2},j+\frac{1}{2}}} \left(D_z\left[\lambda_{i+\frac{1}{2},j+\frac{1}{2}}\overline{X}_{i+\frac{1}{2},j+\frac{1}{2}}^n\right] + D_z\left[\left(\lambda_{i+\frac{1}{2},j+\frac{1}{2}}+2\mu_{i+\frac{1}{2},j+\frac{1}{2}}\right) \overline{Z}^n_{i+\frac{1}{2},j+\frac{1}{2}}\right]\right. \\
+    &\left.+ D_x\left[\mu_{i+\frac{1}{2},j+\frac{1}{2}}\overline{T}_{i+\frac{1}{2},j+\frac{1}{2}}^n\right] \right) \\
+    \overline{X}_{i+\frac{1}{2},j}^{n} &= \overline{X}_{i+\frac{1}{2},j}^{n+1} - \Delta t D_x\left[\overline{U}^{n+\frac{1}{2}}_{i+\frac{1}{2},j}\right] \\
+    \overline{Z}_{i+\frac{1}{2},j}^{n} &= \overline{Z}_{i+\frac{1}{2},j}^{n+1} - \Delta t D_z\left[\overline{V}^{n+\frac{1}{2}}_{i+\frac{1}{2},j}\right] \\
+    \overline{T}_{i,j+\frac{1}{2}}^{n} &= \overline{T}_{i,j+\frac{1}{2}}^{n+1} - \Delta t \left(D_z\left[\overline{U}^{n+\frac{1}{2}}_{i,j + \frac{1}{2}}\right] + D_x\left[\overline{V}^{n+\frac{1}{2}}_{i,j + \frac{1}{2}}\right]\right) \\
+\end{aligned}
+\end{equation}
+where the adjoint versions of the corresponding forward fields are denoted with a line above the letter. The discrete differential operators in direction $s\in\{x,z\}$ are denoted by $D_s\left[\circ\right]$. Note that it is important that the parameters are multiplied with the fields \emph{before} the differentiation is applied. For example with a 2nd order central finite difference $D_z\left[\lambda_{i+\frac{1}{2},j+\frac{1}{2}}\overline{X}_{i+\frac{1}{2},j+\frac{1}{2}}^n\right] = \frac{1}{\Delta_z}\left(\lambda_{i+\frac{1}{2},j+1}\overline{X}_{i+\frac{1}{2},j+1}^n - \lambda_{i+\frac{1}{2},j}\overline{X}_{i+\frac{1}{2},j}^n\right)$. Also note the swapping and sign difference of $n, n+1$ with respect to the forward equations since we are backpropagating from $t=T_{final}$ to $0$. 
 
-\begin{enumerate}
-	\item Adjoint implementation
-	\item Algorithm overview for modeling forward and adjoint.
-	\item Gradient calculation 
-	\item Algorithm overview for gradient calc in between?
-	\item LGBFS updating (short please)
-\end{enumerate}
+A CPML layer was also implemented for the adjoint equations. The method to derive the equations inside the CPML layer was the same as for the forward equations and simply consisted of adding memory variables to each derivative present in~\cref{eq:discretized_elastic_adjoint_written_out}. The parameters for CPML used where the same as in the forward model and this thus resulted in a total of 8 extra 2D fields (memory variables) being stored in the adjoint CPML area. 
 
+\begin{algorithm}
+\caption{Backward adjoint modeling and gradient calculation}\label{alg:adjoint_prop}
+\begin{algorithmic}[1]
+\Function{Propagate adjoint and calculate gradients}{$U,V$}
+\Comment{Beginning of adjoint loop}
+\State $\gamma_{\rho} = 0, \gamma_{\mu} = 0, \gamma_{\lambda} = 0$ \Comment{Initialize gradients to 0}
+\State $\overline{U} \gets \overline U - \left(d^{mod}_U\left(N_t-1\right) - d^{meas}_U\left(N_t-1\right)\right) $ \Comment{~\cref{eq:adjoint_source}}
+\State $\overline{Z} \gets \overline Z - \left(d^{mod}_Z\left(N_t-1\right) - d^{meas}_Z\left(N_t-1\right)\right) $
+    \For{$it = 1$ to $it < N_t$}
+    \State $\overline X, \overline Z, \overline T \gets $ \Call{Propagate Adjoint Stress}{$\overline U, \overline V$} \Comment{Step \cref{eq:discretized_elastic_adjoint_written_out}}
+    \State $\overline U, \overline V \gets $ \Call{Propagate Adjoint Velocity}{$\overline X, \overline Z, \overline T$} 
+    \State  \Comment{add residuals from~\cref{eq:adjoint_source} as source to the adjoint fields of $V_x$ and $V_z$}
+    \State $\overline{U} \gets \overline U - \left(d^{mod}_U\left(N_t-1-it\right) - d^{meas}_U\left(N_t-1-it\right)\right) $ \Comment{~\cref{eq:adjoint_source}}
+    \State $\overline{Z} \gets \overline Z - \left(d^{mod}_Z\left(N_t-1-it\right) - d^{meas}_Z\left(N_t-1-it\right)\right) $
+    \State $it \gets it + 1$
+    \State $\gamma_{\rho}, \gamma_{\mu}, \gamma_{\lambda} \gets $\Call{step gradients}{$it,U,V,\overline{U}, \overline{V}, \overline{X}, \overline{Z}, \overline{T}$} \Comment{Add steps of the sum of eq~\cref{eq:discrete_gradient_rho_written_out,eq:discrete_gradient_mu_written_out,eq:discrete_gradient_lambda_written_out} to the gradients}
+    \EndFor
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Gradient calculation}
+The gradient is calculated following~\cref{eq:gradient_discretised_linear} using the same notation as in~\cref{eq:discretized_elastic_adjoint_written_out,eq:elastic_discretized_written_out}. A 2nd order central difference in space and time was used. For $\rho$ we get 
+\begin{equation}\label{eq:discrete_gradient_rho_written_out}
+\pder[\chi]{\rho} \approx \sum_{n=0}^{N_t-1}\sum_{i=0}^{N_x-1}\sum_{j=0}^{N_z-1} \frac{1}{2}\left[\overline{U}^{n+\frac{1}{2}}_{i,j}\left(U_{i,j}^{n+1\frac{1}{2}} - U^{n-\frac{1}{2}}_{i,j}\right) + \overline{V}^{n+\frac{1}{2}}_{i+\frac{1}{2},j+\frac{1}{2}}\left(V_{i+\frac{1}{2},j+\frac{1}{2}}^{n+1\frac{1}{2}} - V^{n-\frac{1}{2}}_{i+\frac{1}{2},j+\frac{1}{2}}\right)\right]\Delta x \Delta z
+\end{equation}
+where we used a 2nd order in time central difference of $2\Delta t$ to make the fields coincide with our choice of staggered grid. For $\lambda$ we get
+\begin{equation}\label{eq:discrete_gradient_lambda_written_out}
+\begin{aligned}
+\pder[\chi]{\lambda} &\approx \sum_{n=0}^{N_t-1}\sum_{i=0}^{N_x-1}\sum_{j=0}^{N_z-1} \left(\overline{X}^n_{i+\frac{1}{2}, j} + \overline{Z}^n_{i+\frac{1}{2}, j}\right) \left[\frac{1}{2\Delta x}\left(\left(U^{n-\frac{1}{2}}_{i+1,j} + U^{n+\frac{1}{2}}_{i+1,j}\right) - \left(U^{n-\frac{1}{2}}_{i,j} + U^{n+\frac{1}{2}}_{i,j}\right)\right) \right. \\
+&+\left. \left(\left(V^{n-\frac{1}{2}}_{i+\frac{1}{2},j+\frac{1}{2}} + V^{n+\frac{1}{2}}_{i+\frac{1}{2},j+\frac{1}{2}}\right) - \left(V^{n-\frac{1}{2}}_{i+\frac{1}{2},j-\frac{1}{2}} + V^{n+\frac{1}{2}}_{i+\frac{1}{2},j-\frac{1}{2}}\right)\right)   \right]\Delta x \Delta z \Delta t
+\end{aligned}
+\end{equation}
+and for $\mu$ we get
+\begin{equation}\label{eq:discrete_gradient_mu_written_out}
+\begin{aligned}
+\pder[\chi]{\mu} \approx \sum_{n=0}^{N_t-1}\sum_{i=0}^{N_x-1}\sum_{j=0}^{N_z-1}&\left\{ -\frac{1}{\Delta x}\overline{X}^n_{i+\frac{1}{2}, j} \left[\left(U^{n-\frac{1}{2}}_{i+1,j} + U^{n+\frac{1}{2}}_{i+1,j}\right) - \left(U^{n-\frac{1}{2}}_{i,j} + U^{n+\frac{1}{2}}_{i,j}\right)\right]\right. \\
+&\left.-  \frac{1}{\Delta z}\overline{Z}^n_{i+\frac{1}{2}, j}\left[\left(V^{n-\frac{1}{2}}_{i+\frac{1}{2},j+\frac{1}{2}} + V^{n+\frac{1}{2}}_{i+\frac{1}{2},j+\frac{1}{2}}\right) - \left(V^{n-\frac{1}{2}}_{i+\frac{1}{2},j-\frac{1}{2}} + V^{n+\frac{1}{2}}_{i+\frac{1}{2},j-\frac{1}{2}}\right)\right]  \right.\\
+&\left.-\frac{1}{2\Delta z}\overline{T}^n_{i,j+\frac{1}{2}}\left[\left(U^{n+\frac{1}{2}}_{i,j+1} + U^{n-\frac{1}{2}}_{i,j+1}\right) - \left(U^{n+\frac{1}{2}}_{i,j} + U^{n-\frac{1}{2}}_{i,j}\right)  \right]\right.\\
+& \left.-\frac{1}{2\Delta x}\overline{T}^n_{i,j+\frac{1}{2}}\left[\left(V^{n+\frac{1}{2}}_{i+\frac{1}{2},j+\frac{1}{2}} + V^{n-\frac{1}{2}}_{i+\frac{1}{2},j+\frac{1}{2}}\right) - \left(V^{n+\frac{1}{2}}_{i-\frac{1}{2},j+\frac{1}{2}} + V^{n-\frac{1}{2}}_{i-\frac{1}{2},j+\frac{1}{2}}\right)  \right]\right\}\Delta x \Delta z \Delta t
+\end{aligned}
+\end{equation}
+where again we interpolated in time by averaging a field $K$ at $K^n_{i,j} \approx \frac{1}{2}\left(K^{n+\frac{1}{2}}_{i,j} + K^{n-\frac{1}{2}}_{i,j}\right)$.
+\subsection{Model updating using L-BFGS gradient descent}
+With the gradients in hand, the most simple way to update the models in the gradient direction would just be at each iteration descend in the negative gradient direction. 
+\begin{equation}\label{eq:simplest_gradient_descend}
+\left\{
+\begin{aligned}
+\vec{\rho}_k &= \vec{\rho}_{k-1} - \alpha^{\rho}_k\gamma_\rho \\
+\vec{\lambda}_k &= \vec{\lambda}_{k-1} - \alpha^{\lambda}_k\gamma_\lambda \\
+\vec{\mu}_k &= \vec{\mu}_{k-1} - \alpha^{\mu}_k\gamma_\mu
+\end{aligned}
+\right.
+\end{equation}
+where the index $k$ denotes the iteration number, $\alpha^{\rho}_k, \alpha^{\lambda}_k, \alpha^{\mu}_k $ are step dependent positive stepsizes and the gradients $\vec{\gamma_m}=\pder[\chi]{\vec{m}}\ \forall\  \vec{m} \in \left\{\vec{\rho},\vec{\mu},\vec{\lambda}\right\}$ . In practice, with simple gradient descend, these are constant during the iterations and are determined by hand by monitoring the cost function until it decreases sufficiently each iteration.
+
+Now \emph{Newton's method} for finding roots of function is often used in optimization due to it's incorporation of curvature information through the second derivative(or Hessian Matrix $H$ in multi-dimensional problems). Newton's method improves on~\cref{eq:simplest_gradient_descend} by adding this Hessian information in the gradient descend according to
+\begin{equation}\label{eq:newtons_method_grad_descend}
+\begin{aligned}
+\vec{\rho}_k &= \vec{\rho}_{k-1} - \alpha^{\rho}_k H_{\rho_k}^{-1} \gamma_\rho \\
+\vec{\lambda}_k &= \vec{\lambda}_{k-1} - \alpha^{\lambda}_k H_{\lambda_k}^{-1} \gamma_\lambda \\
+\vec{\mu}_k &= \vec{\mu}_{k-1} - \alpha^{\mu}_k H_{\mu_k}^{-1} \gamma_\mu
+\end{aligned}
+\end{equation}
+The inverse Hessian matrix $H^{-1}$ is computationally expensive to calculate, which is why \emph{quasi-Newton methods} were introduced, approximating the Hessian. One particular widely used version is the Broyden–Fletcher–Goldfarb–Shannon (BFGS) algorithm and it's limited memory variant L-BFGS~\cite{Liu1989}. This tries to approximate the product of the inverse Hessian and gradient by using information of the previous gradient descend steps( and thus requiring one to save the last $L$ previous models and gradients costing extra memory). In this work we used a pre-written standalone module in C~\cite{Alberto2018} which we fed the calculated gradients and models each iteration and which returned the product $H^{-1}\pder[\chi]{\vec{m}}$ for each parameter separately.
+
+\subsection{Implementation in C}
+The FWI inversion for the elastic wave equation was implemented in C in combination with Madagascar\cite{m8r} for reproducible workflow, Jupyter-notebook\cite{Kluyver2016} for data analysis and plotting and is available on request.\footnote{contact: Jaapwesdorp@gmail.com}. 
+
+\subsubsection{Memory considerations}
+The forward modeling of the elastic wave equation in principle only requires one to store 14 $N_x \times N_z$ fields (3 models, 5 real fields and 6 CPML memory variables, which could be optimized to be only the size of the CPML layer at the cost of code clarity). And at each timestep the memory can be overwritten. For the adjoint back-propagation we have the same and thus need to store 13 more fields(5 + 8 CPML). The problem with gradients is that we need to calculate the product of the adjoint and forward fields at all timesteps. We thus need to store the time-slices of at least one of the two. We therefore stored $U$ and $V$ as 3D fields of size $N_x \times N_z \times N_t$ and calculated the gradient during the adjoint propagation loop (approximating $D_t U, D_t V, D_xU, D_xV, D_zU$ and $D_z V$ during the adjoint loop instead of saving these 6 fields in the forward propagation). This provided the best trade-off between memory and computational cost, since memory was a real issue on the 16Gb RAM PC. The full algorithm is shown in~\cref{alg:full_fwi}
+
+\begin{algorithm}
+\caption{FWI sequence}\label{alg:full_fwi}
+\begin{algorithmic}[1]
+\State $d^{meas}_U, d^{meas}_V \gets $\Call{read measured shots}{ } \Comment{Read measured shot data at all receiver positions}
+\State $\rho, \mu, \lambda \gets $ \Call{read initial models}{ }
+\State 
+\For{$k=0$ to $k < N_{fwi-iterations}$}
+    \For{\textbf{each source} $f_q$} \Comment{Loop over source positions(in parallel)}
+        \State $U, V \gets $ \Call{propagate forward}{$\rho, \mu, \lambda$} \Comment{Save the 3D forward velocities for gradients}
+        \State $d^{mod}_U, d^{mod}_V \gets $\Call{save modeled shots}{$U,V$} \Comment{Save shots at all receiver positions}
+   
+        \State $\gamma_{\rho}, \gamma_{\mu}, \gamma_{\lambda} \gets $ \Call{propagate adjoint and calculate gradients}{$U,V, \rho, \mu, \lambda$} \Comment{\cref{alg:adjoint_prop}}
+    \EndFor
+    \If{$k < n_{\text{gradient descend}}$} \Comment{Perform initial gradient descend steps}
+        \State $\rho \gets \rho - \alpha^{\rho}_k \gamma_{\rho}$ \Comment{Stepsize $\alpha$ determined by hand}
+        \State $\mu \gets \mu - \alpha^{\mu}_k \gamma_{\mu}$
+        \State $\lambda \gets \lambda - \alpha^{\lambda}_k \gamma_{\lambda}$
+    \Else  \Comment{Perform L-BFGS steps}
+        \State $c_k \gets 0$ \Comment{Initialize cost function}
+        \State $\alpha^{\rho}_k, \alpha^{\mu}_k, \alpha^{\mu}_k \gets 1$ \Comment{Set initial L-BFGS stepsize to 1}
+        \State $\tilde{H}_{\rho}^{-1}\gamma_{\rho}, \tilde{H}_{\mu}^{-1}\gamma_{\mu}, \tilde{H}_{\lambda}^{-1}\gamma_{\lambda} \gets$ \Call{approximate hessians via L-BFGS}{$k,\rho, \mu, \lambda, \gamma_\rho, \gamma_\mu, \gamma_\lambda$}
+        \State $\rho \gets \rho - \alpha^{\rho}_k \tilde{H}_{\rho}^{-1}\gamma_{\rho}$ 
+        \State $\mu \gets \mu - \alpha^{\mu}_k \tilde{H}_{\mu}^{-1}\gamma_{\mu}$
+        \State $\lambda \gets \lambda - \alpha^{\lambda}_k \tilde{H}_{\lambda}^{-1}\gamma_{\lambda}$
+        \For{\textbf{each source} $f_q$} 
+        \State $U, V \gets $ \Call{propagate forward}{$\rho, \mu, \lambda$}  \Comment{Redo the forward modeling}
+        \State $d^{mod}_U, d^{mod}_V \gets $\Call{save modeled shots}{$U,V$} 
+        \State $c_k \gets $ \Call{calculate cost function}{$d^{meas}_U, d^{meas}_V, d^{mod}_U, d^{mod}_V$} \Comment{\cref{eq:cost_function_standard}}
+        \EndFor
+        \While{$c_k > c_{k-1}$} \Comment{Enter L-BFGS attempt loop if cost is not decreasing}
+            \State $\alpha^{\rho}_k \gets \frac{1}{2}\alpha^{\rho}_k,\  \alpha^{\mu}_k\gets \frac{1}{2}\alpha^{\mu}_k,\ \alpha^{\lambda}_k\gets \frac{1}{2}\alpha^{\lambda}_k$
+            \State $\rho \gets \rho + \alpha^{\rho}_k \tilde{H}_{\rho}^{-1}\gamma_{\rho}$ \Comment{Add back half the step taken}
+            \State $\mu \gets \mu + \alpha^{\mu}_k \tilde{H}_{\mu}^{-1}\gamma_{\mu}$
+            \State $\lambda \gets \lambda + \alpha^{\lambda}_k \tilde{H}_{\lambda}^{-1}\gamma_{\lambda}$
+            \For{\textbf{each source} $f_q$} 
+            \State $U, V \gets $ \Call{propagate forward}{$\rho, \mu, \lambda$} \Comment{Redo the forward modeling}
+            \State $d^{mod}_U, d^{mod}_V \gets $\Call{save modeled shots}{$U,V$} 
+            \State $c_k \gets $ \Call{calculate cost function}{$d^{meas}_U, d^{meas}_V, d^{mod}_U, d^{mod}_V$} 
+            \EndFor
+        \EndWhile
+    \EndIf
+
+\EndFor
+
+\end{algorithmic}
+\end{algorithm}
 \section{FWI results}
 
 
@@ -500,7 +706,7 @@ We also tested the simulation on a bigger more realistic inhomogeneous model wit
 \section*{Appendices}
 \addcontentsline{toc}{section}{Appendices}
 \section{Lagrangian based derivation of the gradient via the adjoint state method}\label{sec:general_math}
-In this section the adjoint equations and the gradients for a general first or second order PDE system will be derived following the approach outlined in \cite{Bradley2012}.
+In this section the adjoint equations and the gradients for a general first or second order PDE system will be derived performing a more generalized version of the approach outlined in \cite{Bradley2012}.
 \subsection{General system of equations}
 \label{sec:general_system}
 We can write the most general minimization problem of a cost function subject any first order or second order (in time) set of partial differential equations(PDE) in the following form
@@ -683,13 +889,26 @@ and the gradients according to~\cref{eq:gradient_discretised_linear}
 \frac{d\chi}{d\rho} &= \int_0^T \frac{-1}{\rho^2 c^2} \vec{\lambda_1}^T \vec{\dot{p}} - \frac{1}{\rho^2}\left(\vec{\lambda_2}^T \pder[\vec{p}]{x} + \vec{\lambda_3}^T \pder[\vec{p}]{z}\right)\  dt\\
 \end{aligned}
 \end{equation}
-
+\clearpage
+\section{Rayleigh wave free surface test}\label{sec:rayleigh_wave_test}
+The free surface condition of~\cref{eq:free_surface_conditions} was tested on a two layer model and resulted in a nicely visible Rayleigh wave traveling to the right, together with P and S waves and their reflections on the boundary.
+\begin{figure}[h]\label{fig:rayleigh_model}
+\includegraphics[width=\textwidth]{fig/rayleigh_model}
+\caption{Earth model with 2 different materials. In the top layer $v_p$ =1800 (m/s), $v_s$ =1000 (m/s) and $\rho$ =1750 (kg/m3). In the bottom layer $v_p$ =3000 (m/s), $v_s$ =1500 (m/s) and $\rho$ =2250 (kg/m3).
+}
+\end{figure}
+\clearpage
+\begin{figure}[!h]\label{fig:rayleigh_shots}
+\includegraphics[width=\textwidth]{fig/rayleigh_shots.pdf}
+\includegraphics[width=0.93\textwidth]{fig/rayleigh_fields.pdf}
+\caption{Free surface applied to the x=0 plane, top represent the shots and bottom four the $V_x$ field slices. Total grid format 2800 by 1000 points and 20000 timesteps, $dx=dz=0.5m$, $dt=0.05$ms, $f_q=30$Hz, CPML was applied on the other boundaries with standard settings(e.g 10 points, $R=0.001$).  }
+\end{figure}
 %----------------------------------------------------------------------------------------
 %	REFERENCE LIST
 %----------------------------------------------------------------------------------------
 \phantomsection
 \bibliographystyle{unsrt}
-\bibliography{bib/UIS_ICP}
+\bibliography{bib/UIS_ICP,custom}
 
 
 %----------------------------------------------------------------------------------------
