@@ -734,6 +734,16 @@ For the FWI we took 2 standard gradient descend steps before applying L-BFGS. Th
 \includegraphics[width=1.15\textwidth]{fig/fwi_vs_gridsize.png}
 \caption{Final reconstruction quality of CPS model with homogeneous starting model with varying gridsize $\Delta h = \Delta x = \Delta z$ the propagation time was increased with gridsize linearly to make sure the wave always propagated the same distance. As gridsize increases, the amount of PPW decreases and therefore the reconstruction quality. Because the amount of points were fixed due to memory limitations, the physical size of the letters increased with $\Delta h$ which in prinicple should increase the reconstruction quality.}
 \end{figure}
+\clearpage
+\subsection{Realistic seismic testing model}
+
+\begin{figure}[!h]\label{fig:cps_fwi_smooth_start}
+\hspace*{-0.6in}
+\includegraphics[width=1.20\textwidth]{fig/cana_fwi_three_params_smooth}
+\hspace*{-0.6in}
+\includegraphics[width=1.20\textwidth]{fig/cana_fwi_three_params_smooth_MSE}
+\caption{Three parameter inversion result with a smooth starting model and the original taken as~\cref{fig:cps_model}}
+\end{figure}
 
 \clearpage
 %--------------------------------------------------------------------------------------------------------------------
